@@ -33,10 +33,13 @@ class Peminjaman extends Model
 
     /**
      * Relasi ke Model User (Peminjam)
+     * PERBAIKAN: Menyinkronkan pencarian relasi agar membaca identity_number (NIM/NIP) di tabel users
      */
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        // 'user_id' adalah kolom foreign key di tabel peminjaman
+        // 'identity_number' adalah kolom primary key/identitas unik di tabel users
+        return $this->belongsTo(User::class, 'user_id', 'identity_number');
     }
 
     /**

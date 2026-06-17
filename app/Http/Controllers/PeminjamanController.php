@@ -18,7 +18,6 @@ class PeminjamanController extends Controller
         $this->middleware('auth');
     }
 
-
     /**
      * Menampilkan daftar transaksi berdasarkan role.
      */
@@ -26,13 +25,16 @@ class PeminjamanController extends Controller
     {
         $query = Peminjaman::with(['user', 'barang', 'kendaraan', 'ruangan'])->latest();
 
+        // Menyesuaikan pengecekan relasi berdasarkan identity_number (NIM/NIP)
         if (Auth::user()->role == 'admin') {
             $peminjamans = $query->get();
         } else {
-            $peminjamans = $query->where('user_id', Auth::id())->get();
+            $peminjamans = $query->where('user_id', Auth::user()->identity_number)
+                                 ->orWhere('user_id', Auth::id())
+                                 ->get();
         }
 
-        // PERBAIKAN: Jalur view disesuaikan dengan folder asli Anda
+        // Jalur view disesuaikan dengan folder asli Anda
         return view('peminjaman.index', compact('peminjamans'));
     }
 
@@ -78,13 +80,16 @@ class PeminjamanController extends Controller
             $pathSuratIzin = $file->storeAs('surat_izin', $namaFile, 'public');
         }
 
+        // Ambil ID Otentikasi terbaik (jika string NIM/NIP, gunakan identity_number)
+        $userIdTersimpan = Auth::user()->identity_number ?? Auth::id();
+
         // 3. LOGIKA PENYIMPANAN DATA BERDASARKAN KATEGORI ASET
         if ($request->kategori === 'barang') {
             if ($request->has('barang_id')) {
                 foreach ($request->barang_id as $key => $id) {
                     if ($id) {
                         Peminjaman::create([
-                            'user_id'     => auth()->id(),
+                            'user_id'     => $userIdTersimpan,
                             'barang_id'   => $id,
                             'jumlah_item' => $request->jumlah[$key] ?? 1,
                             'tgl_pinjam'  => $request->tgl_pinjam,
@@ -99,7 +104,7 @@ class PeminjamanController extends Controller
             }
         } elseif ($request->kategori === 'kendaraan') {
             Peminjaman::create([
-                'user_id'      => auth()->id(),
+                'user_id'      => $userIdTersimpan,
                 'kendaraan_id' => $request->kendaraan_id,
                 'jumlah_item'  => 1,
                 'tgl_pinjam'   => $request->tgl_pinjam,
@@ -111,7 +116,7 @@ class PeminjamanController extends Controller
             ]);
         } elseif ($request->kategori === 'ruangan') {
             Peminjaman::create([
-                'user_id'    => auth()->id(),
+                'user_id'     => $userIdTersimpan,
                 'ruangan_id' => $request->ruangan_id,
                 'jumlah_item' => 1,
                 'tgl_pinjam'  => $request->tgl_pinjam,
@@ -136,8 +141,8 @@ class PeminjamanController extends Controller
         // 1. Logika Pengurangan Stok untuk Barang
         if ($peminjaman->barang_id) {
             $barang = Barang::find($peminjaman->barang_id);
-            if ($barang->jumlah_stok < $peminjaman->jumlah_item) {
-                return redirect()->back()->with('error', 'Gagal setuju: Stok barang tidak mencukupi.');
+            if (!$barang || $barang->jumlah_stok < $peminjaman->jumlah_item) {
+                return redirect()->back()->with('error', 'Gagal setuju: Stok barang tidak mencukupi atau barang tidak ditemukan.');
             }
             $barang->decrement('jumlah_stok', $peminjaman->jumlah_item);
         }
@@ -169,8 +174,10 @@ class PeminjamanController extends Controller
                 $namaAset = $peminjaman->ruangan->nama_ruangan ?? 'Ruangan/Aula';
             }
 
-            // Susun template pesan teks rapi
-            $pesan = "Halo *" . $peminjaman->user->name . "*,\n\n"
+            // Susun template pesan teks rapi dengan fallback name jika objek null
+            $namaPeminjam = $peminjaman->user->name ?? 'Civitas PNUP';
+
+            $pesan = "Halo *" . $namaPeminjam . "*,\n\n"
                    . "Pengajuan peminjaman Anda telah *DISETUJUI* oleh Admin Divisi Rumah Tangga PNUP.\n\n"
                    . "📌 *Detail Aset :* " . $namaAset . "\n"
                    . "🔢 *Jumlah :* " . $detailJumlah . "\n"
@@ -178,11 +185,13 @@ class PeminjamanController extends Controller
                    . "📅 *Batas Kembali :* " . date('d M Y', strtotime($peminjaman->tgl_kembali)) . "\n"
                    . "💡 *Keperluan :* " . ($peminjaman->keperluan ?? '-') . "\n\n"
                    . "Silakan gunakan/ambil aset sesuai ketentuan jadwal di atas.\n"
-                   . "Terma kasih!\n\n"
+                   . "Terima kasih!\n\n"
                    . "_- Sistem Pinjam-INV PNUP -_";
 
             // Eksekusi kirim via Fonnte service
-            WhatsappService::sendMessage($peminjaman->nomor_wa, $pesan);
+            if (class_exists('App\Services\WhatsappService')) {
+                WhatsappService::sendMessage($peminjaman->nomor_wa, $pesan);
+            }
         }
 
         return redirect()->back()->with('success', 'Peminjaman disetujui dan notifikasi WA berhasil dikirim.');
@@ -241,8 +250,10 @@ class PeminjamanController extends Controller
                 $namaAset = $peminjaman->ruangan->nama_ruangan ?? 'Ruangan/Aula';
             }
 
+            $namaPeminjam = $peminjaman->user->name ?? 'Civitas PNUP';
+
             $pesan = "❌ *PEMBERITAHUAN: PENGAJUAN PINJAM DITOLAK*\n\n"
-                   . "Halo *" . $peminjaman->user->name . "*,\n"
+                   . "Halo *" . $namaPeminjam . "*,\n"
                    . "Mohon maaf, pengajuan peminjaman aset Anda berikut ini *BELUM DAPAT DISETUJUI* oleh Admin Divisi Rumah Tangga PNUP:\n\n"
                    . "📌 *Detail Aset :* " . $namaAset . "\n"
                    . "📅 *Rencana Pinjam :* " . date('d M Y', strtotime($peminjaman->tgl_pinjam)) . "\n"
@@ -251,7 +262,9 @@ class PeminjamanController extends Controller
                    . "Terima kasih!\n\n"
                    . "_- Sistem Pinjam-INV PNUP -_";
 
-            WhatsappService::sendMessage($peminjaman->nomor_wa, $pesan);
+            if (class_exists('App\Services\WhatsappService')) {
+                WhatsappService::sendMessage($peminjaman->nomor_wa, $pesan);
+            }
         }
 
         return redirect()->back()->with('success', 'Permintaan peminjaman ditolak dan notifikasi WA telah dikirim.');

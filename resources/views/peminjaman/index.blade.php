@@ -53,7 +53,8 @@
                     <tr>
                         <td class="text-center align-middle">{{ $key + 1 }}</td>
                         <td class="align-middle">
-                            <span class="font-weight-bold d-block">{{ $p->user->name }}</span>
+                            {{-- PERBAIKAN: Menggunakan null-safe fallback agar halaman tidak crash jika data user kosong --}}
+                            <span class="font-weight-bold d-block">{{ $p->user->name ?? 'Civitas PNUP (User Terhapus)' }}</span>
                             @if($p->nomor_wa)
                                 <a href="https://wa.me/{{ $p->nomor_wa }}" target="_blank" class="badge badge-success shadow-sm">
                                     <i class="fab fa-whatsapp mr-1"></i> {{ $p->nomor_wa }}

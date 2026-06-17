@@ -97,7 +97,8 @@
                     <tbody>
                         @forelse($notifikasiPeminjaman as $notif)
                             <tr>
-                                <td class="align-middle font-weight-bold">{{ $notif->user->name }}</td>
+                                {{-- PERBAIKAN: Menggunakan null-safe fallback agar tidak crash jika data user kosong --}}
+                                <td class="align-middle font-weight-bold">{{ $notif->user->name ?? 'Civitas PNUP (User Terhapus)' }}</td>
                                 <td class="align-middle">
                                     @if($notif->barang_id)
                                         <i class="fas fa-box text-muted mr-1"></i> {{ $notif->barang->nama_barang ?? 'Barang' }}
@@ -109,7 +110,7 @@
                                         <span class="text-muted small italic">Aset Terhapus</span>
                                     @endif
                                 </td>
-                                <td class="align-middle small text-muted">{{ $notif->created_at->diffForHumans() }}</td>
+                                <td class="align-middle small text-muted">{{ $notif->created_at ? $notif->created_at->diffForHumans() : '-' }}</td>
                                 <td class="align-middle">
                                     @php $status = strtolower($notif->status); @endphp
                                     @if($status == 'pending')
@@ -125,6 +126,7 @@
                             </tr>
                         @empty
                             <tr>
+                                {{-- PERBAIKAN: Kolom colspan diubah menjadi 4 agar sesuai dengan header tabel --}}
                                 <td colspan="4" class="text-center py-4 text-muted">
                                     <i class="fas fa-info-circle mr-1"></i> Belum ada aktivitas peminjaman.
                                 </td>

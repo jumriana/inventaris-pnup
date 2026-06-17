@@ -55,7 +55,6 @@
                 </button>
 
                 <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                    <!-- Menu Kiri: Hanya muncul jika USER SUDAH LOGIN -->
                     <ul class="navbar-nav me-auto">
                         @auth
                             <li class="nav-item">
@@ -68,28 +67,25 @@
                                 <li class="nav-item dropdown">
                                     <a class="nav-link dropdown-toggle" href="#" id="masterData" role="button" data-bs-toggle="dropdown">Master Data</a>
                                     <ul class="dropdown-menu border-0 shadow-sm">
-                                        <li><a class="dropdown-item" href="{{ route('kategori.index') }}">Jenis</a></li>
+                                        {{-- Menu Jenis/Kategori dihapus untuk penyederhanaan alur sesuai file routes/web.php --}}
                                         <li><a class="dropdown-item" href="{{ route('ruangan.index') }}">Ruangan</a></li>
                                         <li><a class="dropdown-item" href="{{ route('kendaraan.index') }}">Kendaraan</a></li>
                                         <li><a class="dropdown-item" href="{{ route('barang.index') }}">Inventaris</a></li>
                                     </ul>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link" href="{{ route('report.index') }}">Laporan</a>
+                                    <a class="nav-link {{ Request::is('report*') ? 'active fw-bold' : '' }}" href="{{ route('report.index') }}">Laporan</a>
                                 </li>
                             @endif
                         @endauth
                     </ul>
 
-                    <!-- Menu Kanan -->
                     <ul class="navbar-nav ms-auto">
                         @guest
                             @if (Route::has('login'))
-                                <li class="nav-item"><a class="nav-link" href="{{ route('login') }}">Login</a></li>
+                                <li class="nav-item"><a class="nav-link fw-bold" href="{{ route('login') }}">Login</a></li>
                             @endif
-                            @if (Route::has('register'))
-                                <li class="nav-item"><a class="nav-link" href="{{ route('register') }}">Register</a></li>
-                            @endif
+                            {{-- Tautan Register telah dihapus secara permanen demi keamanan --}}
                         @else
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle fw-bold" href="#" role="button" data-bs-toggle="dropdown">
