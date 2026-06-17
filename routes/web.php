@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use App\Http\Controllers\BarangController;
 use App\Http\Controllers\RuanganController;
 use App\Http\Controllers\KendaraanController;
@@ -42,8 +43,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/ruangan', [RuanganController::class, 'index'])->name('ruangan.index');
     Route::get('/kendaraan', [KendaraanController::class, 'index'])->name('kendaraan.index');
     
-    /** 
-     * PERBAIKAN: Fungsi index Barang dibuka untuk umum 
+    /** * PERBAIKAN: Fungsi index Barang dibuka untuk umum 
      * User melihat daftar inventaris yang sudah terurut berdasarkan kondisi di Controller
      */
     Route::get('/barang', [BarangController::class, 'index'])->name('barang.index');
@@ -52,13 +52,7 @@ Route::middleware(['auth'])->group(function () {
     // --- KHUSUS ADMIN (Master Data, Approval, & Report) ---
     Route::middleware(['role:admin'])->group(function () {
         
-        /** 
-         * UPDATE: Resource Kategori/Jenis dihapus untuk menyederhanakan alur navigasi.
-         * Semua pengaturan barang kini langsung dilakukan melalui Resource Barang.
-         */
-
-        /** 
-         * Resource Barang untuk Admin 
+        /** * Resource Barang untuk Admin 
          * Mengelola tambah, edit, dan hapus inventaris.
          */
         Route::resource('barang', BarangController::class)->except(['index']);
@@ -80,3 +74,9 @@ Route::middleware(['auth'])->group(function () {
 
 // 3. REDIRECT & COMPATIBILITY
 Route::redirect('/home', '/dashboard');
+
+// 4. RUTE PEMBUAT KODE ENKRIPSI PASSWORD MANUAL (DARURAT)
+Route::get('/cek-password', function () {
+    return Hash::make('Mhs42522024');
+});
+

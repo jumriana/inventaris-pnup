@@ -83,18 +83,13 @@
                     </div>
                 @endif
 
-                {{-- TOMBOL AJUKAN PEMINJAMAN (Muncul untuk semua jika status Tersedia) --}}
+                {{-- TOMBOL AJUKAN PEMINJAMAN (Dimodifikasi menggunakan fungsi SweetAlert2) --}}
                 @if($ruangan->status == 'Tersedia')
                     <div class="mt-3">
-                        <a href="{{ route('peminjaman.create', ['item_id' => $ruangan->id, 'kategori' => 'ruangan']) }}" 
-                           class="btn btn-outline-primary btn-block rounded-pill shadow-sm">
+                        <button type="button" 
+                                onclick="cekSuratIzin('{{ route('peminjaman.create', ['item_id' => $ruangan->id, 'kategori' => 'ruangan']) }}')"
+                                class="btn btn-outline-primary btn-block rounded-pill shadow-sm">
                             <i class="fas fa-calendar-plus mr-1"></i> Ajukan Peminjaman
-                        </a>
-                    </div>
-                @else
-                    <div class="mt-3">
-                        <button class="btn btn-block btn-secondary rounded-pill disabled" disabled>
-                            <i class="fas fa-ban mr-1"></i> Tidak Tersedia
                         </button>
                     </div>
                 @endif
@@ -137,4 +132,48 @@
         color: white;
     }
 </style>
+@stop
+
+{{-- TAMBAHAN SECTION JAVASCRIPT SWEETALERT2 --}}
+@section('js')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+function cekSuratIzin(urlTujuan) {
+    Swal.fire({
+        title: 'Konfirmasi Surat Izin',
+        text: 'Apakah Anda sudah memiliki surat izin untuk penggunaan ruangan ini?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Ya, Sudah Ada',
+        cancelButtonText: 'Belum Ada',
+        allowOutsideClick: false
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // JIKA USER MEMILIH YA: Alihkan ke halaman form peminjaman
+            window.location.href = urlTujuan;
+        } else if (result.dismiss === Swal.DismissReason.cancel) {
+            // JIKA USER MEMILIH BELUM ADA: Munculkan modal info alur administrasi
+            Swal.fire({
+                title: 'Informasi Pembuatan Surat Izin',
+                html: `<div style="text-align: left; font-size: 14px; line-height: 1.6;">
+                        <p>Sesuai dengan kriteria wajib Divisi Rumah Tangga PNUP, Anda <b>diwajibkan</b> mengurus surat izin fisik terlebih dahulu sebelum menggunakan fasilitas ruangan kampus.</p>
+                        <b class="text-primary"><i class="fas fa-info-circle"></i> Alur Pembuatan Surat Izin Ruangan:</b>
+                        <ol style="margin-top: 5px; padding-left: 20px;">
+                            <li>Unduh atau mintalah draft format surat permohonan peminjaman ruangan resmi.</li>
+                            <li>Ajukan tanda tangan/persetujuan resmi kepada Ketua Jurusan atau Kepala Unit terkait Anda.</li>
+                            <li>Bawa surat cetak fisik tersebut ke bagian Administrasi / Divisi Rumah Tangga di Gedung Direktorat PNUP untuk divalidasi dan mendapatkan nomor surat resmi.</li>
+                            <li>Setelah nomor surat resmi diterbitkan, silakan kembali lagi ke sistem ini untuk melanjutkan proses peminjaman.</li>
+                        </ol>
+                       </div>`,
+                icon: 'info',
+                confirmButtonText: 'Saya Mengerti',
+                confirmButtonColor: '#3085d6'
+            });
+        }
+    });
+}
+</script>
 @stop

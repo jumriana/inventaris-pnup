@@ -15,64 +15,72 @@
             <div class="card shadow-sm border-0" style="border-radius: 20px;">
                 <div class="card-body p-5"> 
                     
-                    <!-- Logo dan Judul -->
                     <div class="text-center mb-4">
                         <img src="{{ asset('img/logo-pnup.png') }}" alt="Logo PNUP" style="height: 80px; width: auto;">
                         <h4 class="mt-3 font-weight-bold">Inventaris PNUP</h4>
-                        <p class="text-muted small">Silakan login untuk mengakses sistem</p>
+                        <p class="text-muted small">Silakan login menggunakan nomor identitas civitas</p>
                     </div>
 
-                    <form method="POST" action="{{ route('login') }}">
+                    <form method="POST" action="{{ route('login') }}" autocomplete="off">
                         @csrf {{-- Pelindung dari error 419 --}}
 
-                        <!-- Input Email -->
                         <div class="mb-3">
-                            <label class="form-label small fw-bold">Alamat Email</label>
-                            <input type="email" name="email" 
-                                   class="form-control @error('email') is-invalid @enderror" 
-                                   value="{{ old('email') }}" required autocomplete="email" autofocus 
-                                   placeholder="admin01@gmail.com">
-                            
-                            @error('email')
-                                <span class="invalid-feedback" role="alert">
-                                    <strong>{{ $message }}</strong>
+                            <label class="form-label small fw-bold">NIM / NIP Civitas</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0" style="border-radius: 12px 0 0 12px; border: 1px solid #e9ecef;">
+                                    <i class="fas fa-id-card text-muted"></i>
                                 </span>
+                                <input type="text" name="identity_number" 
+                                       class="form-control @error('identity_number') is-invalid @enderror" 
+                                       value="{{ old('identity_number') }}" required autofocus 
+                                       placeholder="Masukkan NIM atau NIP Anda"
+                                       autocomplete="off"
+                                       style="border-radius: 0 12px 12px 0 !important; border-left: none !important;">
+                            </div>
+                            
+                            @error('identity_number')
+                                <span class="invalid-feedback d-block" role="alert">
+                                    <strong>{{ $message }}</strong>
+                                endspan
                             @enderror
                         </div>
 
-                        <!-- Input Password -->
                         <div class="mb-3">
                             <label class="form-label small fw-bold">Password</label>
-                            <input type="password" name="password" 
-                                   class="form-control @error('password') is-invalid @enderror" 
-                                   required autocomplete="current-password" 
-                                   placeholder="..........">
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0" style="border-radius: 12px 0 0 12px; border: 1px solid #e9ecef;">
+                                    <i class="fas fa-lock text-muted"></i>
+                                </span>
+                                <input type="password" name="password" 
+                                       class="form-control @error('password') is-invalid @enderror" 
+                                       required autocomplete="new-password" 
+                                       placeholder="Masukkan password Anda"
+                                       style="border-radius: 0 12px 12px 0 !important; border-left: none !important;">
+                            </div>
                             
                             @error('password')
-                                <span class="invalid-feedback" role="alert">
+                                <span class="invalid-feedback d-block" role="alert">
                                     <strong>{{ $message }}</strong>
                                 </span>
                             @enderror
                         </div>
 
-                        <!-- Fitur Ingat Saya (Remember Me) -->
                         <div class="mb-3 form-check">
                             <input class="form-check-input" type="checkbox" name="remember" id="remember" {{ old('remember') ? 'checked' : '' }}>
-                            <label class="form-check-label small" for="remember">
-                                Ingat Saya
+                            <label class="form-check-label small text-secondary" for="remember">
+                                Ingat Saya di Perangkat Ini
                             </label>
                         </div>
 
-                        <!-- Tombol Login -->
                         <div class="d-grid mt-4">
-                            <button type="submit" class="btn btn-primary fw-bold py-2" style="border-radius: 10px; background-color: #007bff;">
-                                Login
+                            <button type="submit" class="btn btn-primary fw-bold py-2 shadow-sm" style="border-radius: 12px; background-color: #007bff;">
+                                <i class="fas fa-sign-in-alt mr-1"></i> Masuk ke Sistem
                             </button>
                         </div>
 
                         @if (Route::has('password.request'))
                             <div class="text-center mt-3">
-                                <a class="btn btn-link btn-sm text-decoration-none" href="{{ route('password.request') }}">
+                                <a class="btn btn-link btn-sm text-decoration-none text-muted small" href="{{ route('password.request') }}">
                                     Lupa Password?
                                 </a>
                             </div>

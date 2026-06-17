@@ -19,8 +19,10 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'identity_number', // <-- PERBAIKAN: Diizinkan agar Laravel bisa membaca NIM / NIP saat login
         'email',
         'password',
+        'role',            // <-- PERBAIKAN: Diizinkan agar Laravel bisa membaca hak akses (User/Admin)
     ];
 
     /**
@@ -44,5 +46,16 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * PERBAIKAN UTAMA: Mengunci sistem autentikasi Laravel agar selalu
+     * mencocokkan kredensial password berdasarkan data kolom 'identity_number'.
+     *
+     * @return string
+     */
+    public function getAuthIdentifierName()
+    {
+        return 'identity_number';
     }
 }

@@ -16,16 +16,34 @@
             </a>
         </div>
         <div class="card-body">
-            <form action="{{ route('report.index') }}" method="GET" class="row g-3 mb-4">
+            {{-- FORM FILTER TRANSAKSI --}}
+            <form action="{{ route('report.index') }}" method="GET" class="row g-3 mb-4" id="form-filter">
+                
+                {{-- 1. DROPDOWN PERIODE CEPAT --}}
+                <div class="col-md-4">
+                    <label for="pilih-periode" class="small font-weight-bold"><i class="fas fa-clock mr-1 text-secondary"></i> Pilih Periode Cepat</label>
+                    <select name="periode" id="pilih-periode" class="form-control form-control-sm">
+                        <option value="">-- Pilih Periode Cepat --</option>
+                        <option value="minggu_ini" {{ request('periode') == 'minggu_ini' ? 'selected' : '' }}>📅 Minggu Ini (7 Hari Terakhir)</option>
+                        <option value="bulan_ini" {{ request('periode') == 'bulan_ini' ? 'selected' : '' }}>📅 Bulan Ini</option>
+                        <option value="tahun_ini" {{ request('periode') == 'tahun_ini' ? 'selected' : '' }}>📅 Tahun Ini</option>
+                    </select>
+                </div>
+
+                {{-- Tanggal Mulai --}}
                 <div class="col-md-4">
                     <label class="small font-weight-bold">Tanggal Mulai</label>
-                    <input type="date" name="start_date" class="form-control form-control-sm" value="{{ request('start_date') }}">
+                    <input type="date" name="start_date" id="start_date" class="form-control form-control-sm" value="{{ request('start_date') }}">
                 </div>
+
+                {{-- Tanggal Selesai --}}
                 <div class="col-md-4">
                     <label class="small font-weight-bold">Tanggal Selesai</label>
-                    <input type="date" name="end_date" class="form-control form-control-sm" value="{{ request('end_date') }}">
+                    <input type="date" name="end_date" id="end_date" class="form-control form-control-sm" value="{{ request('end_date') }}">
                 </div>
-                <div class="col-md-4 d-flex align-items-end">
+
+                {{-- Tombol Submit Form diletakkan di bawah kontrol filter agar layout tetap rapi --}}
+                <div class="col-12 d-flex justify-content-end mt-3">
                     <button type="submit" class="btn btn-primary btn-sm px-3 mr-2 shadow-sm">
                         <i class="fas fa-filter"></i> Filter
                     </button>
@@ -88,3 +106,50 @@
     </div>
 </div>
 @endsection
+
+{{-- LOGIKA AUTOMATION JAVASCRIPT JQUERY --}}
+@section('js')
+<script>
+    $(document).ready(function() {
+        // Mendeteksi perubahan pada dropdown periode cepat
+        $('#pilih-periode').on('change', function() {
+            var pilihan = $(this).val();
+            var hariIni = new Date();
+            
+            var yyyy = hariIni.getFullYear();
+            var mm = String(hariIni.getMonth() + 1).padStart(2, '0');
+            var dd = String(hariIni.getDate()).padStart(2, '0');
+            
+            var formatHariIni = yyyy + '-' + mm + '-' + dd;
+
+            if (pilihan === 'minggu_ini') {
+                // Tarik tanggal mundur ke 7 hari yang lalu
+                var tujuhHariLalu = new Date();
+                tujuhHariLalu.setDate(hariIni.getDate() - 7);
+                
+                var startMM = String(tujuhHariLalu.getMonth() + 1).padStart(2, '0');
+                var startDD = String(tujuhHariLalu.getDate()).padStart(2, '0');
+                
+                $('#start_date').val(tujuhHariLalu.getFullYear() + '-' + startMM + '-' + startDD);
+                $('#end_date').val(formatHariIni);
+
+            } else if (pilihan === 'bulan_ini') {
+                // Rentang dari tanggal 01 sampai akhir bulan berjalan saat ini
+                var tanggalAkhirBulan = new Date(yyyy, hariIni.getMonth() + 1, 0).getDate();
+                
+                $('#start_date').val(yyyy + '-' + mm + '-01');
+                $('#end_date').val(yyyy + '-' + mm + '-' + String(tanggalAkhirBulan).padStart(2, '0'));
+
+            } else if (pilihan === 'tahun_ini') {
+                // Rentang dari 01 Januari sampai 31 Desember tahun berjalan
+                $('#start_date').val(yyyy + '-01-01');
+                $('#end_date').val(yyyy + '-12-31');
+            } else {
+                // Jika kembali memilih opsi default, kosongkan kolom tanggal
+                $('#start_date').val('');
+                $('#end_date').val('');
+            }
+        });
+    });
+</script>
+@stop

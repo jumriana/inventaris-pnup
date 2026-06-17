@@ -1,4 +1,4 @@
-@extends('adminlte::page')
+@extends('adminlte::page') 
 
 @section('title', 'Data Peminjaman')
 
@@ -43,7 +43,6 @@
                         <th>Aset / Barang</th>
                         <th>Waktu Pinjam</th>
                         <th class="text-center">Status</th>
-                        {{-- Menyembunyikan Judul Kolom Aksi dari User --}}
                         @if(auth()->user()->role == 'admin')
                             <th class="text-center" style="width: 180px">Aksi</th>
                         @endif
@@ -77,6 +76,15 @@
                                 <br>
                                 <small class="text-muted">Aula/Ruang Rapat</small>
                             @endif
+
+                            {{-- TOMBOL LIHAT BERKAS SURAT IZIN PDF --}}
+                            @if($p->surat_izin)
+                                <div class="mt-2">
+                                    <a href="{{ asset('storage/' . $p->surat_izin) }}" target="_blank" class="btn btn-xs btn-outline-danger rounded-pill shadow-sm px-2">
+                                        <i class="fas fa-eye mr-1"></i> Lihat Surat Izin
+                                    </a>
+                                </div>
+                            @endif
                         </td>
                         <td class="align-middle">
                             <div class="d-flex flex-column">
@@ -101,11 +109,9 @@
                             @endif
                         </td>
                         
-                        {{-- Menyembunyikan Tombol Aksi dari User --}}
                         @if(auth()->user()->role == 'admin')
                         <td class="text-center align-middle">
                             <div class="btn-group">
-                                {{-- Aksi Admin: Setujui / Tolak --}}
                                 @if(strtolower($p->status) == 'pending')
                                     <form action="{{ route('peminjaman.setujui', $p->id) }}" method="POST" class="d-inline">
                                         @csrf
@@ -123,7 +129,6 @@
                                     </form>
                                 @endif
 
-                                {{-- Aksi: Kembalikan (Hanya muncul jika status Disetujui/Dipinjam) --}}
                                 @if(strtolower($p->status) == 'disetujui')
                                     <form action="{{ route('peminjaman.kembalikan', $p->id) }}" method="POST">
                                         @csrf
@@ -134,7 +139,6 @@
                                     </form>
                                 @endif
 
-                                {{-- Action Hapus (Opsional untuk Histori) --}}
                                 @if(strtolower($p->status) == 'dikembalikan' || strtolower($p->status) == 'ditolak')
                                     <form action="{{ route('peminjaman.destroy', $p->id) }}" method="POST">
                                         @csrf
@@ -150,7 +154,6 @@
                     </tr>
                     @empty
                     <tr>
-                        {{-- Menggunakan variabel dinamis untuk menentukan colspan agar layout tabel kosong tetap presisi --}}
                         <td colspan="{{ auth()->user()->role == 'admin' ? 6 : 5 }}" class="text-center py-5">
                             <i class="fas fa-folder-open fa-3x text-light mb-3"></i>
                             <p class="text-secondary font-weight-bold">Belum ada transaksi peminjaman.</p>
@@ -180,5 +183,6 @@
     }
     .badge { font-weight: 600; border-radius: 6px; }
     .text-indigo { color: #6610f2; }
+    .rounded-pill { border-radius: 50px; }
 </style>
 @stop

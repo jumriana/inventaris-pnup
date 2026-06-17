@@ -12,10 +12,10 @@
         <h3 class="card-title">Input Detail Peminjaman</h3>
     </div>
     
-    <form action="{{ route('peminjaman.store') }}" method="POST">
+    {{-- 1. WAJIB TAMBAH MULTIPART ENCTYPE UNTUK UPLOAD FILE --}}
+    <form action="{{ route('peminjaman.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
         <div class="card-body">
-            <!-- BARIS 1: Informasi Dasar -->
             <div class="row">
                 {{-- Nama Peminjam (Readonly) --}}
                 <div class="col-md-4 form-group">
@@ -47,7 +47,6 @@
                 </div>
             </div>
 
-            <!-- BARIS 2: Kontak & Kategori -->
             <div class="row">
                 {{-- Nomor WA --}}
                 <div class="col-md-4 form-group">
@@ -75,6 +74,22 @@
                         <option value="ruangan" {{ $kategori_pilihan == 'ruangan' ? 'selected' : '' }}>🏢 Ruangan / Aula</option>
                     </select>
                 </div>
+            </div>
+
+            {{-- 2. KOMPONEN INPUT BERKAS PDF SURAT IZIN (DITAMPILKAN SECARA DINAMIS VIA JAVASCRIPT) --}}
+            <div class="form-group mt-2" id="container-surat-izin" style="display: none;">
+                <label for="surat_izin" class="font-weight-bold text-danger">
+                    <i class="fas fa-file-pdf mr-1"></i> Upload Dokumen Surat Izin Resmi Kampus (Format: PDF, Maks: 2MB) *
+                </label>
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text bg-danger text-white"><i class="fas fa-upload"></i></span>
+                    </div>
+                    <input type="file" name="surat_izin" id="surat_izin" class="form-control @error('surat_izin') is-invalid @enderror" accept="application/pdf">
+                </div>
+                @error('surat_izin')
+                    <span class="invalid-feedback d-block" role="alert"><strong>{{ $message }}</strong></span>
+                @enderror
             </div>
 
             <hr>
@@ -156,20 +171,41 @@
         // 1. Validasi Tanggal Dinamis
         $('#tgl_pinjam').on('change', function() {
             var selectedDate = $(this).val();
-            // Set minimal tanggal kembali mengikuti tanggal pinjam yang dipilih
             $('#tgl_kembali').attr('min', selectedDate);
             
-            // Jika tanggal kembali sudah terisi dan lebih kecil dari tanggal pinjam baru, reset value-nya
             if ($('#tgl_kembali').val() < selectedDate) {
                 $('#tgl_kembali').val(selectedDate);
             }
         });
 
-        // 2. Logika Toggle Form Berdasarkan Kategori
+        // 2. FUNGSI LOGIKA DETEKSI UPLOAD SURAT IZIN (KHUSUS RUANGAN & KENDARAAN)
+        function handleSuratIzinVisibility(kategori) {
+            if (kategori === 'ruangan' || kategori === 'kendaraan') {
+                // Tampilkan input berkas dan buat kolomnya wajib diisi
+                $('#container-surat-izin').slideDown();
+                $('#surat_izin').attr('required', true);
+            } else {
+                // Sembunyikan input berkas jika memilih barang
+                $('#container-surat-izin').slideUp();
+                $('#surat_izin').attr('required', false);
+                $('#surat_izin').val(''); // Reset isi file jika kategori diganti
+            }
+        }
+
+        // Jalankan fungsi saat halaman pertama kali dimuat (menjaga data kiriman dari tombol luar)
+        var kategoriAwal = $('#pilih-kategori').val();
+        handleSuratIzinVisibility(kategoriAwal);
+
+        // Jalankan fungsi setiap kali dropdown kategori diganti oleh peminjam
         $('#pilih-kategori').on('change', function() {
             var kategori = $(this).val();
+            
+            // Toggle form utama bawaan
             $('.form-kategori').hide();
             $('#form-' + kategori).show();
+            
+            // Jalankan toggle validasi upload surat izin
+            handleSuratIzinVisibility(kategori);
         });
 
         // 3. Tambah Baris Barang

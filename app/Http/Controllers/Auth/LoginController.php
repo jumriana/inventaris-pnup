@@ -40,6 +40,17 @@ class LoginController extends Controller
     }
 
     /**
+     * PERBAIKAN UTAMA: Mengubah field login utama Laravel dari email 
+     * menjadi identity_number (NIM/NIP) sesuai dengan database kita.
+     *
+     * @return string
+     */
+    public function username()
+    {   
+        return 'identity_number';
+    }
+
+    /**
      * Tambahkan fungsi ini agar setelah Logout 
      * langsung diarahkan kembali ke halaman Login.
      */

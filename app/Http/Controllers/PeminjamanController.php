@@ -9,7 +9,7 @@ use App\Models\Kendaraan;
 use App\Models\Ruangan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use App\Services\WhatsappService; // <-- 1. PANGGIL SERVICE WHATSAPP DI SINI
+use App\Services\WhatsappService; // Import Service WhatsApp Fonnte
 
 class PeminjamanController extends Controller
 {
@@ -18,6 +18,10 @@ class PeminjamanController extends Controller
         $this->middleware('auth');
     }
 
+
+    /**
+     * Menampilkan daftar transaksi berdasarkan role.
+     */
     public function index()
     {
         $query = Peminjaman::with(['user', 'barang', 'kendaraan', 'ruangan'])->latest();
@@ -28,16 +32,20 @@ class PeminjamanController extends Controller
             $peminjamans = $query->where('user_id', Auth::id())->get();
         }
 
+        // PERBAIKAN: Jalur view disesuaikan dengan folder asli Anda
         return view('peminjaman.index', compact('peminjamans'));
     }
 
+    /**
+     * Menampilkan form buat pinjaman baru dengan opsi parameter dinamis.
+     */
     public function create(Request $request)
     {
         // Menangkap parameter dari tombol "Pinjam" di halaman Informasi Ruangan/Kendaraan
         $selected_item_id = $request->query('item_id');
         $kategori_pilihan = $request->query('kategori');
 
-        // Mengambil data yang hanya berstatus tersedia atau memiliki stok
+        // Mengambil data aset yang siap dipinjam
         $barangs = Barang::where('jumlah_stok', '>', 0)->get();
         $kendaraans = Kendaraan::where('status', 'Tersedia')->get();
         $ruangans = Ruangan::where('status', 'Tersedia')->get();
@@ -45,60 +53,87 @@ class PeminjamanController extends Controller
         return view('peminjaman.create', compact('barangs', 'kendaraans', 'ruangans', 'selected_item_id', 'kategori_pilihan'));
     }
     
+    /**
+     * Memproses penyimpanan data permohonan peminjaman baru beserta upload PDF.
+     */
     public function store(Request $request)
     {
-        // ... bagian validasi tetap sama ...
+        // 1. VALIDASI INPUT FORM UTAMA & PEMBATASAN BERKAS PDF
+        $request->validate([
+            'tgl_pinjam'   => 'required|date|after_or_equal:today',
+            'tgl_kembali'  => 'required|date|after_or_equal:tgl_pinjam',
+            'nomor_wa'     => 'required|string',
+            'keperluan'    => 'required|string',
+            'kategori'     => 'required|in:barang,kendaraan,ruangan',
+            'surat_izin'   => 'required_if:kategori,ruangan|required_if:kategori,kendaraan|nullable|mimes:pdf|max:2048',
+        ]);
 
+        // 2. PROSES HANDLE UPLOAD FILE SURAT IZIN KE STORAGE LARAGON
+        $pathSuratIzin = null;
+        if ($request->hasFile('surat_izin')) {
+            $file = $request->file('surat_izin');
+            // Membuat nama file unik berdasarkan timestamp waktu
+            $namaFile = time() . '_' . $file->getClientOriginalName();
+            // Disimpan ke dalam folder: storage/app/public/surat_izin
+            $pathSuratIzin = $file->storeAs('surat_izin', $namaFile, 'public');
+        }
+
+        // 3. LOGIKA PENYIMPANAN DATA BERDASARKAN KATEGORI ASET
         if ($request->kategori === 'barang') {
-            foreach ($request->barang_id as $key => $id) {
-                if ($id) {
-                    Peminjaman::create([
-                        'user_id' => auth()->id(),
-                        'barang_id' => $id,
-                        'jumlah_item' => $request->jumlah[$key],
-                        'tgl_pinjam' => $request->tgl_pinjam,
-                        'tgl_kembali' => $request->tgl_kembali,
-                        'keperluan' => $request->keperluan,
-                        'nomor_wa' => $request->nomor_wa,
-                        'status' => 'pending'
-                    ]);
+            if ($request->has('barang_id')) {
+                foreach ($request->barang_id as $key => $id) {
+                    if ($id) {
+                        Peminjaman::create([
+                            'user_id'     => auth()->id(),
+                            'barang_id'   => $id,
+                            'jumlah_item' => $request->jumlah[$key] ?? 1,
+                            'tgl_pinjam'  => $request->tgl_pinjam,
+                            'tgl_kembali' => $request->tgl_kembali,
+                            'keperluan'   => $request->keperluan,
+                            'nomor_wa'    => $request->nomor_wa,
+                            'surat_izin'  => $pathSuratIzin, // Menyimpan jalur file PDF
+                            'status'      => 'pending'
+                        ]);
+                    }
                 }
             }
         } elseif ($request->kategori === 'kendaraan') {
             Peminjaman::create([
-                'user_id' => auth()->id(),
+                'user_id'      => auth()->id(),
                 'kendaraan_id' => $request->kendaraan_id,
-                'jumlah_item' => 1,
-                'tgl_pinjam' => $request->tgl_pinjam,
-                'tgl_kembali' => $request->tgl_kembali,
-                'keperluan' => $request->keperluan,
-                'nomor_wa' => $request->nomor_wa,
-                'status' => 'pending'
+                'jumlah_item'  => 1,
+                'tgl_pinjam'   => $request->tgl_pinjam,
+                'tgl_kembali'  => $request->tgl_kembali,
+                'keperluan'    => $request->keperluan,
+                'nomor_wa'     => $request->nomor_wa,
+                'surat_izin'   => $pathSuratIzin, // Menyimpan jalur file PDF
+                'status'       => 'pending'
             ]);
         } elseif ($request->kategori === 'ruangan') {
             Peminjaman::create([
-                'user_id' => auth()->id(),
+                'user_id'    => auth()->id(),
                 'ruangan_id' => $request->ruangan_id,
                 'jumlah_item' => 1,
-                'tgl_pinjam' => $request->tgl_pinjam,
+                'tgl_pinjam'  => $request->tgl_pinjam,
                 'tgl_kembali' => $request->tgl_kembali,
-                'keperluan' => $request->keperluan,
-                'nomor_wa' => $request->nomor_wa,
-                'status' => 'pending'
+                'keperluan'   => $request->keperluan,
+                'nomor_wa'    => $request->nomor_wa,
+                'surat_izin'  => $pathSuratIzin, // Menyimpan jalur file PDF
+                'status'      => 'pending'
             ]);
         }
 
-        return redirect()->route('peminjaman.index')->with('success', 'Permohonan berhasil dikirim!');
+        return redirect()->route('peminjaman.index')->with('success', 'Permohonan peminjaman berhasil diajukan! Menunggu validasi berkas oleh Admin.');
     }
 
     /**
-     * 2. MODIFIKASI FUNGSI SETUJUI (Menambahkan Auto-Notif WhatsApp)
+     * Menyetujui peminjaman aset, memotong stok/status, dan mengirim notifikasi WhatsApp.
      */
     public function setujui($id) 
     {
         $peminjaman = Peminjaman::with(['user', 'barang', 'kendaraan', 'ruangan'])->findOrFail($id);
         
-        // 1. Logika untuk Barang (Stok)
+        // 1. Logika Pengurangan Stok untuk Barang
         if ($peminjaman->barang_id) {
             $barang = Barang::find($peminjaman->barang_id);
             if ($barang->jumlah_stok < $peminjaman->jumlah_item) {
@@ -107,12 +142,12 @@ class PeminjamanController extends Controller
             $barang->decrement('jumlah_stok', $peminjaman->jumlah_item);
         }
 
-        // 2. Logika untuk Kendaraan (Status)
+        // 2. Logika Update Status untuk Kendaraan
         if ($peminjaman->kendaraan_id) {
             Kendaraan::where('id', $peminjaman->kendaraan_id)->update(['status' => 'Dipinjam']);
         }
 
-        // 3. Logika untuk Ruangan (Status)
+        // 3. Logika Update Status untuk Ruangan
         if ($peminjaman->ruangan_id) {
             Ruangan::where('id', $peminjaman->ruangan_id)->update(['status' => 'Dipakai']);
         }
@@ -122,7 +157,6 @@ class PeminjamanController extends Controller
 
         // --- PROSES KIRIM NOTIFIKASI WHATSAPP VIA FONNTE ---
         if ($peminjaman->nomor_wa) {
-            // Deteksi Nama Aset secara otomatis berdasarkan kategori pilihan
             $namaAset = '';
             $detailJumlah = '1 Unit';
 
@@ -135,7 +169,7 @@ class PeminjamanController extends Controller
                 $namaAset = $peminjaman->ruangan->nama_ruangan ?? 'Ruangan/Aula';
             }
 
-            // Susun template pesan teks rapi (Gunakan bintang * untuk cetak tebal di WA)
+            // Susun template pesan teks rapi
             $pesan = "Halo *" . $peminjaman->user->name . "*,\n\n"
                    . "Pengajuan peminjaman Anda telah *DISETUJUI* oleh Admin Divisi Rumah Tangga PNUP.\n\n"
                    . "📌 *Detail Aset :* " . $namaAset . "\n"
@@ -144,17 +178,19 @@ class PeminjamanController extends Controller
                    . "📅 *Batas Kembali :* " . date('d M Y', strtotime($peminjaman->tgl_kembali)) . "\n"
                    . "💡 *Keperluan :* " . ($peminjaman->keperluan ?? '-') . "\n\n"
                    . "Silakan gunakan/ambil aset sesuai ketentuan jadwal di atas.\n"
-                   . "Terima kasih!\n\n"
+                   . "Terma kasih!\n\n"
                    . "_- Sistem Pinjam-INV PNUP -_";
 
-            // Eksekusi kirim via Fonnte service Anda
+            // Eksekusi kirim via Fonnte service
             WhatsappService::sendMessage($peminjaman->nomor_wa, $pesan);
         }
-        // --- SELESAI PROSES WHATSAPP ---
 
         return redirect()->back()->with('success', 'Peminjaman disetujui dan notifikasi WA berhasil dikirim.');
     }
 
+    /**
+     * Memproses pemulihan/pengembalian aset menjadi tersedia kembali.
+     */
     public function kembalikan($id) 
     {
         $peminjaman = Peminjaman::findOrFail($id);
@@ -186,19 +222,16 @@ class PeminjamanController extends Controller
     }
 
     /**
-     * 3. MODIFIKASI FUNGSI TOLAK (Menambahkan Auto-Notif WhatsApp)
+     * Menolak permintaan peminjaman dan mengabari user lewat notifikasi otomatis WhatsApp.
      */
     public function tolak($id)
     {
-        // Ambil data peminjaman lengkap beserta relasi datanya
         $peminjaman = Peminjaman::with(['user', 'barang', 'kendaraan', 'ruangan'])->findOrFail($id);
         
-        // Jalankan update status transaksi menjadi ditolak
         $peminjaman->update(['status' => 'ditolak']);
 
         // --- PROSES KIRIM NOTIFIKASI WHATSAPP UNTUK STATUS DITOLAK ---
         if ($peminjaman->nomor_wa) {
-            // Deteksi Nama Aset secara otomatis berdasarkan kategori pilihan
             $namaAset = '';
             if ($peminjaman->barang_id) {
                 $namaAset = $peminjaman->barang->nama_barang ?? 'Barang Inventaris';
@@ -208,7 +241,6 @@ class PeminjamanController extends Controller
                 $namaAset = $peminjaman->ruangan->nama_ruangan ?? 'Ruangan/Aula';
             }
 
-            // Susun template pesan penolakan rapi dengan tanda silang merah ❌
             $pesan = "❌ *PEMBERITAHUAN: PENGAJUAN PINJAM DITOLAK*\n\n"
                    . "Halo *" . $peminjaman->user->name . "*,\n"
                    . "Mohon maaf, pengajuan peminjaman aset Anda berikut ini *BELUM DAPAT DISETUJUI* oleh Admin Divisi Rumah Tangga PNUP:\n\n"
@@ -219,14 +251,15 @@ class PeminjamanController extends Controller
                    . "Terima kasih!\n\n"
                    . "_- Sistem Pinjam-INV PNUP -_";
 
-            // Eksekusi kirim via Fonnte service
             WhatsappService::sendMessage($peminjaman->nomor_wa, $pesan);
         }
-        // --- SELESAI PROSES WHATSAPP ---
 
         return redirect()->back()->with('success', 'Permintaan peminjaman ditolak dan notifikasi WA telah dikirim.');
     }
 
+    /**
+     * Menghapus data transaksi dari sistem (Histori Data).
+     */
     public function destroy($id)
     {
         $peminjaman = Peminjaman::findOrFail($id);

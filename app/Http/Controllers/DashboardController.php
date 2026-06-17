@@ -28,24 +28,39 @@ class DashboardController extends Controller
         $totalBarang = Barang::count();
         $totalKendaraan = Kendaraan::count();
         $totalRuangan = Ruangan::count();
+        
+        // Menghitung ragam macam item aset yang terdaftar di sistem
         $totalInventaris = $totalBarang + $totalKendaraan + $totalRuangan;
+
+        // Barang Tersedia dihitung secara global berdasarkan item yang stoknya di atas 0
+        $barangTersedia = Barang::where('jumlah_stok', '>', 0)->count();
 
         // 2. Logika Pemisahan Data Berdasarkan Role (Penting untuk Privasi Data)
         if (Auth::user()->role == 'admin') {
-            // JIKA ADMIN: Melihat seluruh riwayat dari semua user
+            // JIKA ADMIN: Melihat seluruh riwayat dari semua user di kampus
             $totalRiwayat = Peminjaman::count();
             
-            // Mengambil 5 aktivitas terbaru dari seluruh sistem
+            // Menghitung seluruh aset barang yang sedang dipinjam secara global
+            $barangDipinjam = Peminjaman::whereNotNull('barang_id')
+                ->whereIn('status', ['disetujui', 'pending'])
+                ->count();
+            
+            // Mengambil 5 aktivitas terbaru dari seluruh sistem PNUP
             $notifikasiPeminjaman = Peminjaman::with(['user', 'barang', 'kendaraan', 'ruangan'])
                 ->latest()
                 ->take(5)
                 ->get();
         } else {
-            // JIKA USER (Contoh: Jumriana): Hanya melihat data miliknya sendiri
-            // Variabel disamakan namanya ($totalRiwayat) agar sinkron dengan file Blade
+            // JIKA USER: Hanya melihat ringkasan data milik dirinya sendiri
             $totalRiwayat = Peminjaman::where('user_id', Auth::id())->count();
             
-            // Mengambil 5 aktivitas terbaru khusus milik user yang login
+            // Menghitung hanya barang milik user yang bersangkutan yang sedang aktif dipinjam
+            $barangDipinjam = Peminjaman::where('user_id', Auth::id())
+                ->whereNotNull('barang_id')
+                ->whereIn('status', ['disetujui', 'pending'])
+                ->count();
+            
+            // Mengambil 5 aktivitas terbaru khusus milik user yang sedang aktif login
             $notifikasiPeminjaman = Peminjaman::with(['user', 'barang', 'kendaraan', 'ruangan'])
                 ->where('user_id', Auth::id())
                 ->latest()
@@ -53,11 +68,7 @@ class DashboardController extends Controller
                 ->get();
         }
 
-        // 3. Status Barang (Menghitung barang berdasarkan stok)
-        $barangTersedia = Barang::where('jumlah_stok', '>', 0)->count();
-        $barangDipinjam = Peminjaman::whereIn('status', ['disetujui', 'pending'])->count();
-
-        // 4. Mengirim data ke View Dashboard
+        // 3. Mengirim seluruh data dinamis ke View Dashboard
         return view('dashboard', compact(
             'totalInventaris',
             'totalRiwayat',

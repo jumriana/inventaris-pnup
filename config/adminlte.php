@@ -114,8 +114,8 @@ return [
         'enabled' => true,
         'mode' => 'fullscreen',
         'img' => [
-            'path' => 'vendor/adminlte/dist/img/AdminLTELogo.png',
-            'alt' => 'AdminLTE Preloader Image',
+            'path' => 'img/logo-pnup.png',
+            'alt' => 'Logo PNUP',
             'effect' => 'animation__shake',
             'width' => 60,
             'height' => 60,

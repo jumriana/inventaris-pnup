@@ -13,7 +13,7 @@ class Peminjaman extends Model
 
     /**
      * Atribut yang dapat diisi (Mass Assignable).
-     * Pastikan 'nomor_wa' sudah ada di sini agar tidak error saat simpan data.
+     * Kolom 'surat_izin' wajib didaftarkan di sini agar data PDF tidak diblokir oleh Laravel.
      */
     protected $fillable = [
         'user_id', 
@@ -26,6 +26,7 @@ class Peminjaman extends Model
         'keperluan', 
         'nomor_wa', // Kolom tambahan untuk fitur WhatsApp
         'status',
+        'surat_izin', // <-- SUDAH DITAMBAHKAN DI SINI
         'bukti_fisik',
         'kondisi_saat_ini'
     ];
