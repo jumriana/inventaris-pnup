@@ -22,7 +22,7 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-Auth::routes();
+Auth::routes(['register' => false]); // Sesuai kesepakatan, pendaftaran mandiri dimatikan demi keamanan
 
 // 2. Rute yang HANYA bisa diakses setelah Login
 Route::middleware(['auth'])->group(function () {
@@ -38,6 +38,9 @@ Route::middleware(['auth'])->group(function () {
 
     // Fitur Peminjaman (Resource standard untuk semua user)
     Route::resource('peminjaman', PeminjamanController::class);
+
+    // FITUR BARU: Aksi Request Pengembalian yang bisa dilakukan oleh User dari halaman index peminjaman
+    Route::put('/peminjaman/request-kembali/{id}', [PeminjamanController::class, 'requestPengembalian'])->name('peminjaman.requestKembali');
 
     // Fitur Informasi Aset (Daftar Ruangan, Kendaraan, dan Inventaris Barang)
     Route::get('/ruangan', [RuanganController::class, 'index'])->name('ruangan.index');
@@ -79,4 +82,3 @@ Route::redirect('/home', '/dashboard');
 Route::get('/cek-password', function () {
     return Hash::make('Mhs42522024');
 });
-

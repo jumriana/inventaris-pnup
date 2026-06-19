@@ -24,27 +24,24 @@
                     <form method="POST" action="{{ route('login') }}" autocomplete="off">
                         @csrf {{-- Pelindung dari error 419 --}}
 
+                        {{-- KOLOM INPUT NIM / NIP CIVITAS --}}
                         <div class="mb-3">
                             <label class="form-label small fw-bold">NIM / NIP Civitas</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light border-end-0" style="border-radius: 12px 0 0 12px; border: 1px solid #e9ecef;">
                                     <i class="fas fa-id-card text-muted"></i>
                                 </span>
+                                {{-- Menghapus class is-invalid dari identity_number agar border input tidak ikut memerah --}}
                                 <input type="text" name="identity_number" 
-                                       class="form-control @error('identity_number') is-invalid @enderror" 
+                                       class="form-control" 
                                        value="{{ old('identity_number') }}" required autofocus 
                                        placeholder="Masukkan NIM atau NIP Anda"
                                        autocomplete="off"
                                        style="border-radius: 0 12px 12px 0 !important; border-left: none !important;">
                             </div>
-                            
-                            @error('identity_number')
-                                <span class="invalid-feedback d-block" role="alert">
-                                    <strong>{{ $message }}</strong>
-                                endspan
-                            @enderror
                         </div>
 
+                        {{-- KOLOM INPUT PASSWORD & TEMPAT NOTIFIKASI ERROR KUSTOM --}}
                         <div class="mb-3">
                             <label class="form-label small fw-bold">Password</label>
                             <div class="input-group">
@@ -58,9 +55,10 @@
                                        style="border-radius: 0 12px 12px 0 !important; border-left: none !important;">
                             </div>
                             
+                            {{-- Memunculkan Pesan Error Tepat Di Bawah Input Group Password --}}
                             @error('password')
-                                <span class="invalid-feedback d-block" role="alert">
-                                    <strong>{{ $message }}</strong>
+                                <span class="text-danger font-weight-bold d-block mt-2 small" role="alert">
+                                    <i class="fas fa-exclamation-circle mr-1"></i> {{ $message }}
                                 </span>
                             @enderror
                         </div>

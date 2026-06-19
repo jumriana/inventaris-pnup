@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\Request; // Tambahkan ini untuk fungsi logout
+use Illuminate\Validation\ValidationException; // Ditambahkan untuk handle error custom
 
 class LoginController extends Controller
 {
@@ -57,5 +58,21 @@ class LoginController extends Controller
     protected function loggedOut(Request $request)
     {
         return redirect()->route('login');
+    }
+
+    /**
+     * FITUR BARU: Mengubah kalimat pesan error dan memindahkan 
+     * posisinya agar mengunci di bawah kolom password.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Symfony\Component\HttpFoundation\Response
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    protected function sendFailedLoginResponse(Request $request)
+    {
+        throw ValidationException::withMessages([
+            'password' => ['Username atau password salah!!!'],
+        ]);
     }
 }
