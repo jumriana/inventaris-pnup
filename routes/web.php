@@ -80,5 +80,5 @@ Route::redirect('/home', '/dashboard');
 
 // 4. RUTE PEMBUAT KODE ENKRIPSI PASSWORD MANUAL (DARURAT)
 Route::get('/cek-password', function () {
-    return Hash::make('Mhs42522024');
+    return Hash::make('Pnup123');
 });

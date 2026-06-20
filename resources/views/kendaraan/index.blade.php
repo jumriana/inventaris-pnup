@@ -18,7 +18,7 @@
 @section('content')
 
 @if(session('success'))
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
+    <div class="alert alert-success alert-dismissible fade show d-none" role="alert">
         <i class="icon fas fa-check"></i> {{ session('success') }}
         <button type="button" class="close" data-dismiss="alert" aria-label="Close">
             <span aria-hidden="true">&times;</span>
@@ -75,9 +75,9 @@
                 </ul>
 
                 <div class="d-flex justify-content-between align-items-center mt-auto pt-3 border-top">
-                    {{-- AKSI ADMIN: HAPUS --}}
+                    {{-- AKSI ADMIN: HAPUS MODEREN MENGGUNAKAN INTERCEPTOR SWEETALERT2 --}}
                     @if(Auth::user()->role == 'admin')
-                        <form action="{{ route('kendaraan.destroy', $k->id) }}" method="POST" onsubmit="return confirm('Hapus kendaraan ini?')">
+                        <form action="{{ route('kendaraan.destroy', $k->id) }}" method="POST" class="form-hapus">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="btn btn-link text-danger p-0 text-decoration-none">
@@ -94,7 +94,7 @@
                             </a>
                         @endif
 
-                        {{-- AKSI SEMUA USER: PINJAM (DIMODIFIKASI MENGGUNAKAN POPUP SWEETALERT2) --}}
+                        {{-- AKSI SEMUA USER: PINJAM --}}
                         @if($k->status == 'Tersedia')
                             <button type="button" 
                                     onclick="cekSuratIzinKendaraan('{{ route('peminjaman.create', ['item_id' => $k->id, 'kategori' => 'kendaraan']) }}')"
@@ -131,46 +131,78 @@
 </style>
 @stop
 
-{{-- TAMBAHAN SECTION JAVASCRIPT SWEETALERT2 UNTUK KENDARAAN --}}
 @section('js')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
 <script>
-function cekSuratIzinKendaraan(urlTujuan) {
-    Swal.fire({
-        title: 'Konfirmasi Surat Izin Jalan',
-        text: 'Apakah Anda sudah memiliki surat izin resmi untuk penggunaan kendaraan operasional ini?',
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: '#28a745',
-        cancelButtonColor: '#dc3545',
-        confirmButtonText: 'Ya, Sudah Ada',
-        cancelButtonText: 'Belum Ada',
-        allowOutsideClick: false
-    }).then((result) => {
-        if (result.isConfirmed) {
-            // JIKA USER MEMILIH YA: Alihkan langsung ke form peminjaman baru
-            window.location.href = urlTujuan;
-        } else if (result.dismiss === Swal.DismissReason.cancel) {
-            // JIKA USER MEMILIH BELUM ADA: Munculkan modal info alur persuratan jalan
+    $(document).ready(function () {
+        // 1. PEMBERITAHUAN KONFIRMASI SEBELUM HAPUS KENDARAAN
+        $(document).on('submit', '.form-hapus', function(e) {
+            e.preventDefault();
+            var form = this;
+
             Swal.fire({
-                title: 'Informasi Persuratan Kendaraan',
-                html: `<div style="text-align: left; font-size: 14px; line-height: 1.6;">
-                        <p>Sesuai prosedur operasional Divisi Rumah Tangga PNUP, peminjaman kendaraan (bus/mobil dinas) <b>diwajibkan</b> melampirkan berkas surat izin peminjaman resmi.</p>
-                        <b class="text-warning"><i class="fas fa-file-alt"></i> Alur Pengurusan Surat Izin Kendaraan:</b>
-                        <ol style="margin-top: 5px; padding-left: 20px;">
-                            <li>Buat surat permohonan peminjaman resmi yang ditandatangani oleh Ketua Lembaga/Organisasi atau Ketua Jurusan Anda.</li>
-                            <li>Bawa surat cetak fisik tersebut ke <b>Sub Bagian Umum & BMN / Divisi Rumah Tangga di Gedung Direktorat PNUP</b> untuk divalidasi dan mendapatkan nomor surat jalan resmi.</li>
-                            <li>Pastikan Anda juga sudah berkoordinasi dengan pihak driver/supir internal kampus mengenai kesiapan jadwal perjalanan.</li>
-                            <li>Setelah surat resmi ber-nomor diterbitkan, silakan kembali lagi ke sistem ini untuk melanjutkan pengisian form dan mengunggah berkas PDF surat izin tersebut.</li>
-                        </ol>
-                       </div>`,
-                icon: 'info',
-                confirmButtonText: 'Saya Mengerti',
-                confirmButtonColor: '#007bff'
+                title: 'Apakah Anda yakin?',
+                text: "Data kendaraan ini akan dihapus secara permanen dari sistem!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal',
+                allowOutsideClick: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
             });
-        }
+        });
+
+        // 2. PEMBERITAHUAN SETELAH BERHASIL DIHAPUS / DIUPDATE
+        @if(session('success'))
+            Swal.fire({
+                title: 'Berhasil!',
+                text: "{{ session('success') }}",
+                icon: 'success',
+                confirmButtonColor: '#3085d6',
+                confirmButtonText: 'Oke'
+            });
+        @endif
     });
-}
+
+    // 3. LOGIKA POPUP SURAT IZIN JALAN KENDARAAN
+    function cekSuratIzinKendaraan(urlTujuan) {
+        Swal.fire({
+            title: 'Konfirmasi Surat Izin Jalan',
+            text: 'Apakah Anda sudah memiliki surat izin resmi untuk penggunaan kendaraan operasional ini?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#28a745',
+            cancelButtonColor: '#dc3545',
+            confirmButtonText: 'Ya, Sudah Ada',
+            cancelButtonText: 'Belum Ada',
+            allowOutsideClick: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = urlTujuan;
+            } else if (result.dismiss === Swal.DismissReason.cancel) {
+                Swal.fire({
+                    title: 'Informasi Persuratan Kendaraan',
+                    html: `<div style="text-align: left; font-size: 14px; line-height: 1.6;">
+                            <p>Sesuai prosedur operasional Divisi Rumah Tangga PNUP, peminjaman kendaraan (bus/mobil dinas) <b>diwajibkan</b> melampirkan berkas surat izin peminjaman resmi.</p>
+                            <b class="text-warning"><i class="fas fa-file-alt"></i> Alur Pengurusan Surat Izin Kendaraan:</b>
+                            <ol style="margin-top: 5px; padding-left: 20px;">
+                                <li>Buat surat permohonan peminjaman resmi yang ditandatangani oleh Ketua Lembaga/Organisasi atau Ketua Jurusan Anda.</li>
+                                <li>Bawa surat cetak fisik tersebut ke <b>Sub Bagian Umum & BMN / Divisi Rumah Tangga di Gedung Direktorat PNUP</b> untuk divalidasi dan mendapatkan nomor surat jalan resmi.</li>
+                                <li>Pastikan Anda juga sudah berkoordinasi dengan pihak driver/supir internal kampus mengenai kesiapan jadwal perjalanan.</li>
+                                <li>Setelah surat resmi ber-nomor diterbitkan, silakan kembali lagi ke sistem ini untuk melanjutkan pengisian form dan mengunggah berkas PDF surat izin tersebut.</li>
+                            </ol>
+                           </div>`,
+                    icon: 'info',
+                    confirmButtonText: 'Saya Mengerti',
+                    confirmButtonColor: '#007bff'
+                });
+            }
+        });
+    }
 </script>
 @stop

@@ -305,8 +305,6 @@ return [
             'text' => 'Dashboard',
             'url'  => 'dashboard',
             'icon' => 'fas fa-fw fa-tachometer-alt',
-            'label' => 4,
-            'label_color' => 'success',
         ],
         [
             'text' => 'Peminjaman',

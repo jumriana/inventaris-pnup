@@ -17,9 +17,9 @@
 
 @section('content')
 
-{{-- Notifikasi Sukses --}}
+{{-- Notifikasi Sukses Bawaan (Akan Otomatis Ditangkap SweetAlert2 Juga) --}}
 @if(session('success'))
-    <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+    <div class="alert alert-success alert-dismissible fade show shadow-sm d-none" role="alert">
         <i class="icon fas fa-check-circle"></i> {{ session('success') }}
         <button type="button" class="close" data-dismiss="alert" aria-label="Close">
             <span aria-hidden="true">&times;</span>
@@ -61,7 +61,7 @@
                     <i class="fas fa-info-circle text-info mr-1"></i> {{ Str::limit($b->ruangan_id, 40) }}
                 </p>
 
-                {{-- HASIL PERUBAHAN: Tampilan statistik satu kolom penuh tanpa kolom NUP --}}
+                {{-- Tampilan statistik satu kolom penuh tanpa kolom NUP --}}
                 <div class="text-center mb-3 py-2 bg-light rounded mx-0">
                     <small class="d-block text-muted">Jumlah</small>
                     <span class="font-weight-bold {{ $b->jumlah_stok > 0 ? 'text-success' : 'text-danger' }}" style="font-size: 1.1rem;">
@@ -72,9 +72,9 @@
                 {{-- LOGIKA TOMBOL BERDASARKAN ROLE DAN KONDISI --}}
                 <div class="mt-3 border-top pt-3">
                     @if(Auth::user()->role == 'admin')
-                        {{-- TAMPILAN ADMIN: Tetap bisa Hapus & Edit dalam kondisi apapun --}}
+                        {{-- TAMPILAN ADMIN: Menggunakan class="form-hapus" untuk SweetAlert2 --}}
                         <div class="d-flex justify-content-between align-items-center">
-                            <form action="{{ route('barang.destroy', $b->id) }}" method="POST" onsubmit="return confirm('Hapus barang ini?')">
+                            <form action="{{ route('barang.destroy', $b->id) }}" method="POST" class="form-hapus">
                                 @csrf 
                                 @method('DELETE')
                                 <button type="submit" class="btn btn-sm text-danger p-0"><i class="fas fa-trash"></i> Hapus</button>
@@ -123,4 +123,44 @@
     .badge { font-size: 0.75rem; }
     .bg-light { background-color: #f8f9fa !important; }
 </style>
+@stop
+
+@section('js')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    $(document).ready(function () {
+        // 1. POPUP KONFIRMASI SEBELUM HAPUS BARANG
+        $(document).on('submit', '.form-hapus', function(e) {
+            e.preventDefault();
+            var form = this;
+
+            Swal.fire({
+                title: 'Apakah Anda yakin?',
+                text: "Data barang inventaris ini akan dihapus secara permanen dari sistem!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal',
+                allowOutsideClick: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+
+        // 2. POPUP NOTIFIKASI BERHASIL DIHAPUS / DISIMPAN
+        @if(session('success'))
+            Swal.fire({
+                title: 'Berhasil!',
+                text: "{{ session('success') }}",
+                icon: 'success',
+                confirmButtonColor: '#3085d6',
+                confirmButtonText: 'Oke'
+            });
+        @endif
+    });
+</script>
 @stop

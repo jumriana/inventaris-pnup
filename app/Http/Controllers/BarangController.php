@@ -5,11 +5,21 @@ namespace App\Http\Controllers;
 use App\Models\Barang;
 use App\Models\Kategori;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class BarangController extends Controller
 {
     /**
+     * Penerapan middleware auth secara global untuk mengamankan controller.
+     */
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
+    /**
      * 1. Menampilkan daftar inventaris barang.
+     * Terbuka untuk seluruh pengguna yang telah terautentikasi.
      */
     public function index()
     {
@@ -19,25 +29,35 @@ class BarangController extends Controller
 
     /**
      * 2. Menampilkan form tambah barang.
+     * PROTEKSI: Khusus Admin.
      */
     public function create()
     {
+        if (Auth::user()->role !== 'admin') {
+            abort(403, 'Anda tidak memiliki hak akses untuk halaman ini.');
+        }
+
         $kategoris = Kategori::orderBy('kategori_induk', 'asc')->get();
         return view('barang.create', compact('kategoris'));
     }
 
     /**
      * 3. Menyimpan data barang baru ke database (Mendukung 6 Field Form BMN).
+     * PROTEKSI: Khusus Admin.
      */
     public function store(Request $request)
     {
+        if (Auth::user()->role !== 'admin') {
+            abort(403, 'Aksi tidak diizinkan.');
+        }
+
         // Validasi input dari 6 field form baru Anda (Tabel sudah diarahkan ke 'barang')
         $request->validate([
-            'kode_barang' => 'required|unique:barang,kode_inventaris',
+            'kode_barang' => 'required|string|max:100|unique:barang,kode_inventaris',
             'nup'         => 'required|numeric|min:1',
-            'nama_barang' => 'required|string',
-            'merk'        => 'required|string',
-            'kondisi'     => 'required|string',
+            'nama_barang' => 'required|string|max:255',
+            'merk'        => 'required|string|max:255',
+            'kondisi'     => 'required|in:Baik,Rusak Ringan,Rusak',
             'keterangan'  => 'nullable|string',
         ]);
 
@@ -62,9 +82,14 @@ class BarangController extends Controller
 
     /**
      * 4. Menampilkan form edit barang.
+     * PROTEKSI: Khusus Admin.
      */
     public function edit($id)
     {
+        if (Auth::user()->role !== 'admin') {
+            abort(403, 'Anda tidak memiliki hak akses untuk halaman ini.');
+        }
+
         $barang = Barang::findOrFail($id);
         $kategoris = Kategori::orderBy('kategori_induk', 'asc')->get();
 
@@ -73,18 +98,23 @@ class BarangController extends Controller
 
     /**
      * 5. Memperbarui data barang yang sudah ada.
+     * PROTEKSI: Khusus Admin.
      */
     public function update(Request $request, $id)
     {
+        if (Auth::user()->role !== 'admin') {
+            abort(403, 'Aksi tidak diizinkan.');
+        }
+
         $barang = Barang::findOrFail($id);
 
         // Validasi input edit untuk 6 field form baru Anda (Tabel sudah diarahkan ke 'barang')
         $request->validate([
-            'kode_barang' => 'required|unique:barang,kode_inventaris,'.$id,
+            'kode_barang' => 'required|string|max:100|unique:barang,kode_inventaris,' . $id,
             'nup'         => 'required|numeric|min:1',
-            'nama_barang' => 'required|string',
-            'merk'        => 'required|string',
-            'kondisi'     => 'required|string',
+            'nama_barang' => 'required|string|max:255',
+            'merk'        => 'required|string|max:255',
+            'kondisi'     => 'required|in:Baik,Rusak Ringan,Rusak',
             'keterangan'  => 'nullable|string',
         ]);
 
@@ -103,9 +133,14 @@ class BarangController extends Controller
 
     /**
      * 6. Menghapus data barang.
+     * PROTEKSI: Khusus Admin.
      */
     public function destroy($id)
     {
+        if (Auth::user()->role !== 'admin') {
+            abort(403, 'Aksi tidak diizinkan.');
+        }
+
         $barang = Barang::findOrFail($id);
         $barang->delete();
 
