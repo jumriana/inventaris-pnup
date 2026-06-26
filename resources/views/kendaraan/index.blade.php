@@ -58,21 +58,43 @@
                     </p>
                 </div>
 
-                <ul class="list-group list-group-unbordered mb-3">
-                    <li class="list-group-item border-top-0">
-                        <b>Kondisi</b> <a class="float-right text-dark">{{ $k->kondisi }}</a>
-                    </li>
-                    <li class="list-group-item border-bottom-0">
-                        <b>Status</b> 
-                        <a class="float-right">
-                            @if($k->status == 'Tersedia')
-                                <span class="badge badge-success px-3">Tersedia</span>
-                            @else
-                                <span class="badge badge-danger px-3">Dipinjam</span>
-                            @endif
-                        </a>
-                    </li>
-                </ul>
+                {{-- UPDATE BARU: Grid Info Kondisi, Status, dan Surat Izin --}}
+                <div class="row text-center mb-3 py-2 bg-light rounded mx-0">
+                    <div class="col-4 border-right px-1">
+                        <small class="d-block text-muted">Kondisi</small>
+                        <span class="font-weight-bold small text-dark">{{ $k->kondisi }}</span>
+                    </div>
+                    <div class="col-4 border-right px-1">
+                        <small class="d-block text-muted">Surat Izin</small>
+                        {{-- Logika: Jika Motor tidak wajib surat, selain itu wajib --}}
+                        @if($k->jenis_kendaraan == 'Motor')
+                            <span class="text-muted font-weight-bold small"><i class="fas fa-times-circle mr-1"></i> Tidak</span>
+                        @else
+                            <span class="text-warning font-weight-bold small"><i class="fas fa-file-contract mr-1"></i> Wajib</span>
+                        @endif
+                    </div>
+                    <div class="col-4 px-1">
+                        <small class="d-block text-muted">Status</small>
+                        @if($k->status == 'Tersedia')
+                            <span class="badge badge-success px-2 py-0">Tersedia</span>
+                        @else
+                            <span class="badge badge-danger px-2 py-0">Dipinjam</span>
+                        @endif
+                    </div>
+                </div>
+
+                {{-- PENAMBAHAN: Estimasi Batas Waktu Pemakaian Kendaraan --}}
+                @if($k->status == 'Dipinjam')
+                    <div class="mt-1 mb-3 p-2 bg-light rounded text-danger text-center border border-danger-soft" style="font-size: 0.85rem; background-color: #fff5f5;">
+                        <i class="fas fa-clock mr-1 animate-pulse"></i> 
+                        <strong>Dipinjam s.d:</strong> <br>
+                        @if($k->peminjamanAktif && $k->peminjamanAktif->tgl_kembali)
+                            {{ \Carbon\Carbon::parse($k->peminjamanAktif->tgl_kembali)->translatedFormat('d M Y') }}
+                        @else
+                            <span class="text-muted font-italic">Sedang Berlangsung</span>
+                        @endif
+                    </div>
+                @endif
 
                 <div class="d-flex justify-content-between align-items-center mt-auto pt-3 border-top">
                     {{-- AKSI ADMIN: HAPUS MODEREN MENGGUNAKAN INTERCEPTOR SWEETALERT2 --}}
@@ -125,9 +147,18 @@
     .card { transition: transform .2s; }
     .card:hover { transform: scale(1.02); }
     .profile-username { font-size: 1.25rem; color: #343a40; }
-    .list-group-item { font-size: 0.9rem; }
     .text-secondary { line-height: 1.2; }
     .border-top { border-top: 1px solid #f4f4f4 !important; }
+    
+    /* Animasi berkedip pelan pada ikon jam */
+    .animate-pulse {
+        animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.4; }
+        100% { opacity: 1; }
+    }
 </style>
 @stop
 
@@ -169,7 +200,7 @@
         @endif
     });
 
-    // 3. LOGIKA POPUP SURAT IZIN JALAN KENDARAAN
+    // 3. LOGIKA POPUP SURAT IZIN JALAN KENDARAAN (MENDUKUNG ALUR MAHASISWA & STAF/DOSEN)
     function cekSuratIzinKendaraan(urlTujuan) {
         Swal.fire({
             title: 'Konfirmasi Surat Izin Jalan',
@@ -188,14 +219,26 @@
                 Swal.fire({
                     title: 'Informasi Persuratan Kendaraan',
                     html: `<div style="text-align: left; font-size: 14px; line-height: 1.6;">
-                            <p>Sesuai prosedur operasional Divisi Rumah Tangga PNUP, peminjaman kendaraan (bus/mobil dinas) <b>diwajibkan</b> melampirkan berkas surat izin peminjaman resmi.</p>
-                            <b class="text-warning"><i class="fas fa-file-alt"></i> Alur Pengurusan Surat Izin Kendaraan:</b>
-                            <ol style="margin-top: 5px; padding-left: 20px;">
-                                <li>Buat surat permohonan peminjaman resmi yang ditandatangani oleh Ketua Lembaga/Organisasi atau Ketua Jurusan Anda.</li>
-                                <li>Bawa surat cetak fisik tersebut ke <b>Sub Bagian Umum & BMN / Divisi Rumah Tangga di Gedung Direktorat PNUP</b> untuk divalidasi dan mendapatkan nomor surat jalan resmi.</li>
-                                <li>Pastikan Anda juga sudah berkoordinasi dengan pihak driver/supir internal kampus mengenai kesiapan jadwal perjalanan.</li>
-                                <li>Setelah surat resmi ber-nomor diterbitkan, silakan kembali lagi ke sistem ini untuk melanjutkan pengisian form dan mengunggah berkas PDF surat izin tersebut.</li>
-                            </ol>
+                            <p>Sesuai prosedur operasional Divisi Rumah Tangga PNUP, peminjaman kendaraan operasional diwajibkan melampirkan berkas surat izin peminjaman resmi.</p>
+                            
+                            <b class="text-warning"><i class="fas fa-file-alt"></i> Alur Pengurusan Surat Izin Kendaraan PNUP:</b>
+                            
+                            <div class="mt-2" style="border-left: 3px solid #ffc107; padding-left: 10px; margin-bottom: 12px;">
+                                <strong class="text-primary"><i class="fas fa-user-graduate"></i> KHUSUS MAHASISWA:</strong>
+                                <ol style="margin-top: 5px; padding-left: 20px; margin-bottom: 5px;">
+                                    <li>Membuat surat izin penggunaan kendaraan operasional kampus yang ditujukan kepada <b>Wakil Direktur III (Wadir 3)</b>.</li>
+                                    <li>Membawa berkas surat tersebut untuk disahkan atau ditandatangani oleh <b>Wakil Direktur II (Wadir 2)</b>.</li>
+                                </ol>
+                            </div>
+
+                            <div style="border-left: 3px solid #28a745; padding-left: 10px;">
+                                <strong class="text-success"><i class="fas fa-user-tie"></i> STAF & DOSEN:</strong>
+                                <ol style="margin-top: 5px; padding-left: 20px; margin-bottom: 5px;">
+                                    <li>Dapat langsung bersurat resmi ke <b>Divisi Rumah Tangga PNUP</b> tanpa melalui Wakil Direktur.</li>
+                                </ol>
+                            </div>
+                            
+                            <p class="mt-3 small text-muted" style="border-top: 1px dashed #ddd; padding-top: 8px;"><i class="fas fa-info-circle"></i> Setelah surat resmi ber-nomor diterbitkan, silakan kembali lagi ke sistem ini untuk melanjutkan pengisian form dan mengunggah berkas PDF surat izin tersebut.</p>
                            </div>`,
                     icon: 'info',
                     confirmButtonText: 'Saya Mengerti',

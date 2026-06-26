@@ -35,9 +35,9 @@
                 <div class="d-flex justify-content-between align-items-start mb-2">
                     <small class="text-uppercase text-muted font-weight-bold">{{ $ruangan->kode_ruangan }}</small>
                     {{-- Badge Status --}}
-                    @if($ruangan->status == 'Tersedia')
+                    @if(strtolower($ruangan->status) == 'tersedia')
                         <span class="badge badge-success px-2 py-1">Tersedia</span>
-                    @elseif($ruangan->status == 'Dipakai')
+                    @elseif(strtolower($ruangan->status) == 'dipakai')
                         <span class="badge badge-danger px-2 py-1">Dipakai</span>
                     @else
                         <span class="badge badge-warning px-2 py-1 text-white">Perbaikan</span>
@@ -62,16 +62,32 @@
                     </div>
                 </div>
 
-                <p class="small text-secondary flex-grow-1">
+                <p class="small text-secondary flex-grow-1 mb-2">
                     {{ $ruangan->keterangan ?? 'Tidak ada deskripsi tambahan.' }}
                 </p>
+
+                {{-- PENYEMPURNAAN LOGIKA: Melacak transaksi aktif berstatus disetujui --}}
+                @if(strtolower($ruangan->status) == 'dipakai')
+                    @php
+                        // Mencari data transaksi terakhir dari ruangan ini yang berstatus disetujui
+                        $transaksiAktif = $ruangan->peminjamans ? $ruangan->peminjamans->where('status', 'disetujui')->last() : null;
+                    @endphp
+                    <div class="mt-1 mb-3 p-2 bg-light rounded text-danger border border-danger-soft" style="font-size: 0.85rem; background-color: #fff5f5;">
+                        <i class="fas fa-clock mr-1 animate-pulse"></i> 
+                        <strong>Terpakai s.d:</strong> 
+                        @if($transaksiAktif && $transaksiAktif->tgl_kembali)
+                            {{ \Carbon\Carbon::parse($transaksiAktif->tgl_kembali)->translatedFormat('d M Y') }}
+                        @else
+                            <span class="text-muted font-italic">Sedang Berlangsung</span>
+                        @endif
+                    </div>
+                @endif
 
                 <hr class="my-3">
 
                 {{-- AKSES AKSI UNTUK ADMIN --}}
                 @if(Auth::user()->role == 'admin')
                     <div class="d-flex justify-content-between align-items-center">
-                        {{-- UPDATE: Menggunakan class="form-hapus" untuk integrasi SweetAlert2 --}}
                         <form action="{{ route('ruangan.destroy', $ruangan->id) }}" method="POST" class="form-hapus">
                             @csrf 
                             @method('DELETE')
@@ -85,7 +101,7 @@
                 @endif
 
                 {{-- TOMBOL AJUKAN PEMINJAMAN --}}
-                @if($ruangan->status == 'Tersedia')
+                @if(strtolower($ruangan->status) == 'tersedia')
                     <div class="mt-3">
                         <button type="button" 
                                 onclick="cekSuratIzin('{{ route('peminjaman.create', ['item_id' => $ruangan->id, 'kategori' => 'ruangan']) }}')"
@@ -132,6 +148,14 @@
         background-color: #007bff;
         color: white;
     }
+    .animate-pulse {
+        animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.4; }
+        100% { opacity: 1; }
+    }
 </style>
 @stop
 
@@ -177,11 +201,11 @@
     function cekSuratIzin(urlTujuan) {
         Swal.fire({
             title: 'Konfirmasi Surat Izin',
-            text: 'Apakah Anda sudah memiliki surat izin untuk penggunaan ruangan ini?',
+            text: 'Apakah Anda sudah memiliki surat izin resmi untuk penggunaan ruangan ini?',
             icon: 'question',
             showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
+            confirmButtonColor: '#28a745',
+            cancelButtonColor: '#dc3545',
             confirmButtonText: 'Ya, Sudah Ada',
             cancelButtonText: 'Belum Ada',
             allowOutsideClick: false
@@ -190,20 +214,32 @@
                 window.location.href = urlTujuan;
             } else if (result.dismiss === Swal.DismissReason.cancel) {
                 Swal.fire({
-                    title: 'Informasi Pembuatan Surat Izin',
+                    title: 'Informasi Persuratan Ruangan',
                     html: `<div style="text-align: left; font-size: 14px; line-height: 1.6;">
-                            <p>Sesuai dengan kriteria wajib Divisi Rumah Tangga PNUP, Anda <b>diwajibkan</b> mengurus surat izin fisik terlebih dahulu sebelum menggunakan fasilitas ruangan kampus.</p>
-                            <b class="text-primary"><i class="fas fa-info-circle"></i> Alur Pembuatan Surat Izin Ruangan:</b>
-                            <ol style="margin-top: 5px; padding-left: 20px;">
-                                <li>Unduh atau mintalah draft format surat permohonan peminjaman ruangan resmi.</li>
-                                <li>Ajukan tanda tangan/persetujuan resmi kepada Ketua Jurusan atau Kepala Unit terkait Anda.</li>
-                                <li>Bawa surat cetak fisik tersebut ke bagian Administrasi / Divisi Rumah Tangga di Gedung Direktorat PNUP untuk divalidasi dan mendapatkan nomor surat resmi.</li>
-                                <li>Setelah nomor surat resmi diterbitkan, silakan kembali lagi ke sistem ini untuk melanjutkan proses peminjaman.</li>
-                            </ol>
+                            <p>Sesuai prosedur operasional Divisi Rumah Tangga PNUP, peminjaman fasilitas ruangan/aula diwajibkan melampirkan berkas surat izin peminjaman resmi.</p>
+                            
+                            <b class="text-warning"><i class="fas fa-file-alt"></i> Alur Pengurusan Surat Izin Ruangan PNUP:</b>
+                            
+                            <div class="mt-2" style="border-left: 3px solid #ffc107; padding-left: 10px; margin-bottom: 12px;">
+                                <strong class="text-primary"><i class="fas fa-user-graduate"></i> KHUSUS MAHASISWA:</strong>
+                                <ol style="margin-top: 5px; padding-left: 20px; margin-bottom: 5px;">
+                                    <li>Membuat surat izin penggunaan fasilitas ruangan yang ditujukan kepada <b>Wakil Direktur III (Wadir 3)</b>.</li>
+                                    <li>Membawa berkas surat tersebut untuk disahkan atau ditandatangani oleh <b>Wakil Direktur II (Wadir 2)</b>.</li>
+                                </ol>
+                            </div>
+
+                            <div style="border-left: 3px solid #28a745; padding-left: 10px;">
+                                <strong class="text-success"><i class="fas fa-user-tie"></i> STAF & DOSEN:</strong>
+                                <ol style="margin-top: 5px; padding-left: 20px; margin-bottom: 5px;">
+                                    <li>Dapat langsung bersurat resmi mengajukan permohonan ke <b>Divisi Rumah Tangga PNUP</b> tanpa melalui Wakil Direktur.</li>
+                                </ol>
+                            </div>
+                            
+                            <p class="mt-3 small text-muted" style="border-top: 1px dashed #ddd; padding-top: 8px;"><i class="fas fa-info-circle"></i> Setelah surat resmi ber-nomor diterbitkan, silakan kembali lagi ke sistem ini untuk melanjutkan proses peminjaman.</p>
                            </div>`,
                     icon: 'info',
                     confirmButtonText: 'Saya Mengerti',
-                    confirmButtonColor: '#3085d6'
+                    confirmButtonColor: '#007bff'
                 });
             }
         });

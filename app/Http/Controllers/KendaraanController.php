@@ -18,12 +18,13 @@ class KendaraanController extends Controller
     }
 
     /**
-     * 1. Menampilkan daftar kendaraan.
+     * 1. Menampilkan daftar kendaraan beserta estimasi waktu pemakaian (Eager Loading).
      * Terbuka untuk semua user (Admin dan Staff/Mahasiswa).
      */
     public function index()
     {
-        $kendaraans = Kendaraan::all(); 
+        // MODIFIKASI: Memuat relasi peminjamanAktif agar data tgl_kembali bisa terbaca di Blade View
+        $kendaraans = Kendaraan::with('peminjamanAktif')->get(); 
         return view('kendaraan.index', compact('kendaraans'));
     }
 

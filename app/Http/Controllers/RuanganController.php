@@ -18,12 +18,14 @@ class RuanganController extends Controller
     }
 
     /**
-     * 1. Menampilkan daftar semua ruangan.
+     * 1. Menampilkan daftar semua ruangan beserta estimasi waktu pemakaian (Eager Loading).
      * Dapat diakses oleh Admin maupun User umum.
      */
     public function index()
     {
-        $ruangans = Ruangan::all();
+        // PERBAIKAN: Memuat relasi 'peminjamans' dan 'peminjamanAktif' secara bersamaan
+        // agar logika penyaringan status 'disetujui' di file Blade dapat terbaca dengan sempurna.
+        $ruangans = Ruangan::with(['peminjamans', 'peminjamanAktif'])->get();
         return view('ruangan.index', compact('ruangans'));
     }
 

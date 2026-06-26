@@ -53,7 +53,6 @@
                     <tr>
                         <td class="text-center align-middle">{{ $key + 1 }}</td>
                         <td class="align-middle">
-                            {{-- PERBAIKAN: Menggunakan null-safe fallback agar halaman tidak crash jika data user kosong --}}
                             <span class="font-weight-bold d-block">{{ $p->user->name ?? 'Civitas PNUP (User Terhapus)' }}</span>
                             @if($p->nomor_wa)
                                 <a href="https://wa.me/{{ $p->nomor_wa }}" target="_blank" class="badge badge-success shadow-sm">
@@ -114,37 +113,41 @@
                         <td class="text-center align-middle">
                             <div class="btn-group">
                                 @if(strtolower($p->status) == 'pending')
-                                    <form action="{{ route('peminjaman.setujui', $p->id) }}" method="POST" class="d-inline">
+                                    {{-- FORM SETUJUI (SWEETALERT) --}}
+                                    <form action="{{ route('peminjaman.setujui', $p->id) }}" method="POST" class="d-inline form-setujui">
                                         @csrf
                                         @method('PUT')
-                                        <button type="submit" class="btn btn-sm btn-success mr-1 shadow-sm" title="Setujui" onclick="return confirm('Setujui peminjaman ini? Stok/Status aset akan otomatis terpotong.')">
+                                        <button type="submit" class="btn btn-sm btn-success mr-1 shadow-sm" title="Setujui">
                                             <i class="fas fa-check"></i> Setujui
                                         </button>
                                     </form>
-                                    <form action="{{ route('peminjaman.tolak', $p->id) }}" method="POST" class="d-inline">
+                                    {{-- FORM TOLAK (SWEETALERT) --}}
+                                    <form action="{{ route('peminjaman.tolak', $p->id) }}" method="POST" class="d-inline form-tolak">
                                         @csrf
                                         @method('PUT')
-                                        <button type="submit" class="btn btn-sm btn-danger shadow-sm" title="Tolak" onclick="return confirm('Tolak peminjaman ini?')">
+                                        <button type="submit" class="btn btn-sm btn-danger shadow-sm" title="Tolak">
                                             <i class="fas fa-times"></i>
                                         </button>
                                     </form>
                                 @endif
 
                                 @if(strtolower($p->status) == 'disetujui')
-                                    <form action="{{ route('peminjaman.kembalikan', $p->id) }}" method="POST">
+                                    {{-- FORM KEMBALIKAN (SWEETALERT) --}}
+                                    <form action="{{ route('peminjaman.kembalikan', $p->id) }}" method="POST" class="form-kembalikan">
                                         @csrf
                                         @method('PUT')
-                                        <button type="submit" class="btn btn-info btn-sm shadow-sm" onclick="return confirm('Proses pengembalian aset? Status akan kembali menjadi Tersedia.')">
+                                        <button type="submit" class="btn btn-info btn-sm shadow-sm">
                                             <i class="fas fa-undo mr-1"></i> Kembalikan
                                         </button>
                                     </form>
                                 @endif
 
                                 @if(strtolower($p->status) == 'dikembalikan' || strtolower($p->status) == 'ditolak')
-                                    <form action="{{ route('peminjaman.destroy', $p->id) }}" method="POST">
+                                    {{-- FORM HAPUS (SWEETALERT) --}}
+                                    <form action="{{ route('peminjaman.destroy', $p->id) }}" method="POST" class="form-hapus">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-link text-danger btn-sm" onclick="return confirm('Hapus permanen histori ini?')">
+                                        <button type="submit" class="btn btn-link text-danger btn-sm">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </form>
@@ -186,4 +189,101 @@
     .text-indigo { color: #6610f2; }
     .rounded-pill { border-radius: 50px; }
 </style>
+@stop
+
+@section('js')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    $(document).ready(function () {
+        
+        // 1. POPUP MODERN UNTUK AKSI PERSETUJUAN (SETUJUI)
+        $(document).on('submit', '.form-setujui', function(e) {
+            e.preventDefault();
+            var form = this;
+
+            Swal.fire({
+                title: 'Setujui peminjaman ini?',
+                text: "Stok atau status aset akan otomatis terpotong oleh sistem.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Ya, Setujui!',
+                cancelButtonText: 'Batal',
+                allowOutsideClick: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+
+        // 2. POPUP MODERN UNTUK AKSI PENOLAKAN (TOLAK)
+        $(document).on('submit', '.form-tolak', function(e) {
+            e.preventDefault();
+            var form = this;
+
+            Swal.fire({
+                title: 'Tolak peminjaman ini?',
+                text: "Permohonan transaksi ini akan ditandai sebagai ditolak.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Ya, Tolak!',
+                cancelButtonText: 'Batal',
+                allowOutsideClick: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+
+        // 3. POPUP MODERN UNTUK PROSES PENGEMBALIAN ASET (KEMBALIKAN)
+        $(document).on('submit', '.form-kembalikan', function(e) {
+            e.preventDefault();
+            var form = this;
+
+            Swal.fire({
+                title: 'Proses pengembalian aset?',
+                text: "Status barang atau fasilitas akan dikembalikan menjadi 'Tersedia'.",
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonColor: '#17a2b8',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Ya, Kembalikan!',
+                cancelButtonText: 'Batal',
+                allowOutsideClick: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+
+        // 4. POPUP MODERN UNTUK HAPUS PERMANEN RIWAYAT (HAPUS)
+        $(document).on('submit', '.form-hapus', function(e) {
+            e.preventDefault();
+            var form = this;
+
+            Swal.fire({
+                title: 'Apakah Anda yakin?',
+                text: "Data histori peminjaman ini akan dihapus secara permanen dari sistem!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal',
+                allowOutsideClick: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+
+    });
+</script>
 @stop

@@ -25,7 +25,6 @@ class PeminjamanController extends Controller
     {
         $query = Peminjaman::with(['user', 'barang', 'kendaraan', 'ruangan'])->latest();
 
-        // Menyesuaikan pengecekan relasi berdasarkan identity_number (NIM/NIP)
         if (Auth::user()->role == 'admin') {
             $peminjamans = $query->get();
         } else {
@@ -34,7 +33,6 @@ class PeminjamanController extends Controller
                                  ->get();
         }
 
-        // Jalur view disesuaikan dengan folder asli Anda
         return view('peminjaman.index', compact('peminjamans'));
     }
 
@@ -43,11 +41,9 @@ class PeminjamanController extends Controller
      */
     public function create(Request $request)
     {
-        // Menangkap parameter dari tombol "Pinjam" di halaman Informasi Ruangan/Kendaraan
         $selected_item_id = $request->query('item_id');
         $kategori_pilihan = $request->query('kategori');
 
-        // Mengambil data aset yang siap dipinjam
         $barangs = Barang::where('jumlah_stok', '>', 0)->get();
         $kendaraans = Kendaraan::where('status', 'Tersedia')->get();
         $ruangans = Ruangan::where('status', 'Tersedia')->get();
@@ -56,11 +52,11 @@ class PeminjamanController extends Controller
     }
     
     /**
-     * Memproses penyimpanan data permohonan peminjaman baru beserta upload PDF.
+     * Memproses penyimpanan data permohonan peminjaman baru dengan validasi Race Condition jadwal.
      */
     public function store(Request $request)
     {
-        // 1. VALIDASI INPUT FORM UTAMA & PEMBATASAN BERKAS PDF
+        // 1. VALIDASI INPUT FORM UTAMA
         $request->validate([
             'tgl_pinjam'   => 'required|date|after_or_equal:today',
             'tgl_kembali'  => 'required|date|after_or_equal:tgl_pinjam',
@@ -70,131 +66,198 @@ class PeminjamanController extends Controller
             'surat_izin'   => 'required_if:kategori,ruangan|required_if:kategori,kendaraan|nullable|mimes:pdf|max:2048',
         ]);
 
-        // 2. PROSES HANDLE UPLOAD FILE SURAT IZIN KE STORAGE LARAGON
+        // 2. HANDLE UPLOAD FILE SURAT IZIN
         $pathSuratIzin = null;
         if ($request->hasFile('surat_izin')) {
             $file = $request->file('surat_izin');
-            // Membuat nama file unik berdasarkan timestamp waktu
             $namaFile = time() . '_' . $file->getClientOriginalName();
-            // Disimpan ke dalam folder: storage/app/public/surat_izin
             $pathSuratIzin = $file->storeAs('surat_izin', $namaFile, 'public');
         }
 
-        // Ambil ID Otentikasi terbaik (jika string NIM/NIP, gunakan identity_number)
         $userIdTersimpan = Auth::user()->identity_number ?? Auth::id();
+        $tgl_pnm = $request->tgl_pinjam;
+        $tgl_kmb = $request->tgl_kembali;
 
-        // 3. LOGIKA PENYIMPANAN DATA BERDASARKAN KATEGORI ASET
-        if ($request->kategori === 'barang') {
-            if ($request->has('barang_id')) {
-                foreach ($request->barang_id as $key => $id) {
-                    if ($id) {
-                        Peminjaman::create([
-                            'user_id'     => $userIdTersimpan,
-                            'barang_id'   => $id,
-                            'jumlah_item' => $request->jumlah[$key] ?? 1,
-                            'tgl_pinjam'  => $request->tgl_pinjam,
-                            'tgl_kembali' => $request->tgl_kembali,
-                            'keperluan'   => $request->keperluan,
-                            'nomor_wa'    => $request->nomor_wa,
-                            'surat_izin'  => $pathSuratIzin, // Menyimpan jalur file PDF
-                            'status'      => 'pending'
-                        ]);
+        try {
+            // 3. JALANKAN DATABASE TRANSACTION UNTUK MENGHINDARI RACE CONDITION
+            DB::transaction(function () use ($request, $userIdTersimpan, $pathSuratIzin, $tgl_pnm, $tgl_kmb) {
+                
+                if ($request->kategori === 'barang') {
+                    if ($request->has('barang_id')) {
+                        foreach ($request->barang_id as $key => $id) {
+                            if ($id) {
+                                // Mengunci baris data barang yang dipilih
+                                $barang = Barang::where('id', $id)->lockForUpdate()->first();
+                                $qty_req = $request->jumlah[$key] ?? 1;
+
+                                if (!$barang || $barang->jumlah_stok < $qty_req) {
+                                    throw new \Exception("Stok untuk barang " . ($barang->nama_barang ?? '') . " tidak mencukupi.");
+                                }
+
+                                Peminjaman::create([
+                                    'user_id'     => $userIdTersimpan,
+                                    'barang_id'   => $id,
+                                    'jumlah_item' => $qty_req,
+                                    'tgl_pinjam'  => $tgl_pnm,
+                                    'tgl_kembali' => $tgl_kmb,
+                                    'keperluan'   => $request->keperluan,
+                                    'nomor_wa'    => $request->nomor_wa,
+                                    'surat_izin'  => $pathSuratIzin,
+                                    'status'      => 'pending'
+                                ]);
+                            }
+                        }
                     }
-                }
-            }
-        } elseif ($request->kategori === 'kendaraan') {
-            Peminjaman::create([
-                'user_id'      => $userIdTersimpan,
-                'kendaraan_id' => $request->kendaraan_id,
-                'jumlah_item'  => 1,
-                'tgl_pinjam'   => $request->tgl_pinjam,
-                'tgl_kembali'  => $request->tgl_kembali,
-                'keperluan'    => $request->keperluan,
-                'nomor_wa'     => $request->nomor_wa,
-                'surat_izin'   => $pathSuratIzin, // Menyimpan jalur file PDF
-                'status'       => 'pending'
-            ]);
-        } elseif ($request->kategori === 'ruangan') {
-            Peminjaman::create([
-                'user_id'     => $userIdTersimpan,
-                'ruangan_id' => $request->ruangan_id,
-                'jumlah_item' => 1,
-                'tgl_pinjam'  => $request->tgl_pinjam,
-                'tgl_kembali' => $request->tgl_kembali,
-                'keperluan'   => $request->keperluan,
-                'nomor_wa'    => $request->nomor_wa,
-                'surat_izin'  => $pathSuratIzin, // Menyimpan jalur file PDF
-                'status'      => 'pending'
-            ]);
-        }
+                } 
+                
+                elseif ($request->kategori === 'kendaraan') {
+                    // Kunci eksklusif baris data kendaraan
+                    $kendaraan = Kendaraan::where('id', $request->kendaraan_id)->lockForUpdate()->first();
 
-        return redirect()->route('peminjaman.index')->with('success', 'Permohonan peminjaman berhasil diajukan! Menunggu validasi berkas oleh Admin.');
+                    // Cek bentrokan jadwal pengajuan lain yang berstatus pending/disetujui
+                    $isBentrok = Peminjaman::where('kendaraan_id', $request->kendaraan_id)
+                        ->whereIn('status', ['pending', 'disetujui'])
+                        ->where(function ($query) use ($tgl_pnm, $tgl_kmb) {
+                            $query->whereBetween('tgl_pinjam', [$tgl_pnm, $tgl_kmb])
+                                  ->orWhereBetween('tgl_kembali', [$tgl_pnm, $tgl_kmb])
+                                  ->orWhere(function ($q) use ($tgl_pnm, $tgl_kmb) {
+                                      $q->where('tgl_pinjam', '<=', $tgl_pnm)
+                                        ->where('tgl_kembali', '>=', $tgl_kmb);
+                                  });
+                        })->exists();
+
+                    if ($isBentrok) {
+                        throw new \Exception("Maaf, kendaraan tersebut sudah dipesan oleh pengguna lain pada tanggal pilihan Anda.");
+                    }
+
+                    Peminjaman::create([
+                        'user_id'      => $userIdTersimpan,
+                        'kendaraan_id' => $request->kendaraan_id,
+                        'jumlah_item'  => 1,
+                        'tgl_pinjam'   => $tgl_pnm,
+                        'tgl_kembali'  => $tgl_kmb,
+                        'keperluan'    => $request->keperluan,
+                        'nomor_wa'     => $request->nomor_wa,
+                        'surat_izin'   => $pathSuratIzin,
+                        'status'       => 'pending'
+                    ]);
+                } 
+                
+                elseif ($request->kategori === 'ruangan') {
+                    // Kunci eksklusif baris data ruangan
+                    $ruangan = Ruangan::where('id', $request->ruangan_id)->lockForUpdate()->first();
+
+                    // Cek bentrokan jadwal ruangan
+                    $isBentrok = Peminjaman::where('ruangan_id', $request->ruangan_id)
+                        ->whereIn('status', ['pending', 'disetujui'])
+                        ->where(function ($query) use ($tgl_pnm, $tgl_kmb) {
+                            $query->whereBetween('tgl_pinjam', [$tgl_pnm, $tgl_kmb])
+                                  ->orWhereBetween('tgl_kembali', [$tgl_pnm, $tgl_kmb])
+                                  ->orWhere(function ($q) use ($tgl_pnm, $tgl_kmb) {
+                                      $q->where('tgl_pinjam', '<=', $tgl_pnm)
+                                        ->where('tgl_kembali', '>=', $tgl_kmb);
+                                  });
+                        })->exists();
+
+                    if ($isBentrok) {
+                        throw new \Exception("Maaf, ruangan/aula tersebut sudah dipesan pada rentang tanggal pilihan Anda.");
+                    }
+
+                    Peminjaman::create([
+                        'user_id'     => $userIdTersimpan,
+                        'ruangan_id'  => $request->ruangan_id,
+                        'jumlah_item' => 1,
+                        'tgl_pinjam'  => $tgl_pnm,
+                        'tgl_kembali' => $tgl_kmb,
+                        'keperluan'   => $request->keperluan,
+                        'nomor_wa'    => $request->nomor_wa,
+                        'surat_izin'  => $pathSuratIzin,
+                        'status'      => 'pending'
+                    ]);
+                }
+            });
+
+            return redirect()->route('peminjaman.index')->with('success', 'Permohonan peminjaman berhasil diajukan! Menunggu validasi berkas oleh Admin.');
+
+        } catch (\Exception $e) {
+            // Semua query otomatis dibatalkan jika melempar exception di sini (Rollback)
+            return redirect()->back()->with('error', $e->getMessage())->withInput();
+        }
     }
 
     /**
-     * Menyetujui peminjaman aset, memotong stok/status, dan mengirim notifikasi WhatsApp.
+     * Menyetujui peminjaman aset, memotong stok/status dengan proteksi transaksi.
      */
     public function setujui($id) 
     {
-        $peminjaman = Peminjaman::with(['user', 'barang', 'kendaraan', 'ruangan'])->findOrFail($id);
-        
-        // 1. Logika Pengurangan Stok untuk Barang
-        if ($peminjaman->barang_id) {
-            $barang = Barang::find($peminjaman->barang_id);
-            if (!$barang || $barang->jumlah_stok < $peminjaman->jumlah_item) {
-                return redirect()->back()->with('error', 'Gagal setuju: Stok barang tidak mencukupi atau barang tidak ditemukan.');
+        try {
+            DB::transaction(function () use ($id, &$peminjaman) {
+                // Ambil dan kunci baris transaksi peminjaman ini
+                $peminjaman = Peminjaman::with(['user', 'barang', 'kendaraan', 'ruangan'])->lockForUpdate()->findOrFail($id);
+
+                if ($peminjaman->status === 'disetujui') {
+                    throw new \Exception("Transaksi ini sudah disetujui sebelumnya.");
+                }
+
+                // 1. Logika Pengurangan Stok untuk Barang
+                if ($peminjaman->barang_id) {
+                    $barang = Barang::where('id', $peminjaman->barang_id)->lockForUpdate()->first();
+                    if (!$barang || $barang->jumlah_stok < $peminjaman->jumlah_item) {
+                        throw new \Exception('Gagal setuju: Stok barang tidak mencukupi.');
+                    }
+                    $barang->decrement('jumlah_stok', $peminjaman->jumlah_item);
+                }
+
+                // 2. Logika Update Status untuk Kendaraan
+                if ($peminjaman->kendaraan_id) {
+                    Kendaraan::where('id', $peminjaman->kendaraan_id)->update(['status' => 'Dipinjam']);
+                }
+
+                // 3. Logika Update Status untuk Ruangan
+                if ($peminjaman->ruangan_id) {
+                    Ruangan::where('id', $peminjaman->ruangan_id)->update(['status' => 'Dipakai']);
+                }
+
+                $peminjaman->update(['status' => 'disetujui']);
+            });
+
+            // --- PROSES KIRIM NOTIFIKASI WHATSAPP VIA FONNTE ---
+            if ($peminjaman && $peminjaman->nomor_wa) {
+                $namaAset = '';
+                $detailJumlah = '1 Unit';
+
+                if ($peminjaman->barang_id) {
+                    $namaAset = $peminjaman->barang->nama_barang ?? 'Barang Inventaris';
+                    $detailJumlah = $peminjaman->jumlah_item . ' Unit';
+                } elseif ($peminjaman->kendaraan_id) {
+                    $namaAset = ($peminjaman->kendaraan->nama_kendaraan ?? 'Kendaraan') . ' [' . ($peminjaman->kendaraan->plat_nomor ?? '-') . ']';
+                } elseif ($peminjaman->ruangan_id) {
+                    $namaAset = $peminjaman->ruangan->nama_ruangan ?? 'Ruangan/Aula';
+                }
+
+                $namaPeminjam = $peminjaman->user->name ?? 'Civitas PNUP';
+
+                $pesan = "Halo *" . $namaPeminjam . "*,\n\n"
+                       . "Pengajuan peminjaman Anda telah *DISETUJUI* oleh Admin Divisi Rumah Tangga PNUP.\n\n"
+                       . "📌 *Detail Aset :* " . $namaAset . "\n"
+                       . "🔢 *Jumlah :* " . $detailJumlah . "\n"
+                       . "📅 *Mulai Pinjam :* " . date('d M Y', strtotime($peminjaman->tgl_pinjam)) . "\n"
+                       . "📅 *Batas Kembali :* " . date('d M Y', strtotime($peminjaman->tgl_kembali)) . "\n"
+                       . "💡 *Keperluan :* " . ($peminjaman->keperluan ?? '-') . "\n\n"
+                       . "Silakan gunakan/ambil aset sesuai ketentuan jadwal di atas.\n"
+                       . "Terima kasih!\n\n"
+                       . "_- Sistem Pinjam-INV PNUP -_";
+
+                if (class_exists('App\Services\WhatsappService')) {
+                    WhatsappService::sendMessage($peminjaman->nomor_wa, $pesan);
+                }
             }
-            $barang->decrement('jumlah_stok', $peminjaman->jumlah_item);
+
+            return redirect()->back()->with('success', 'Peminjaman disetujui dan notifikasi WA berhasil dikirim.');
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', $e->getMessage());
         }
-
-        // 2. Logika Update Status untuk Kendaraan
-        if ($peminjaman->kendaraan_id) {
-            Kendaraan::where('id', $peminjaman->kendaraan_id)->update(['status' => 'Dipinjam']);
-        }
-
-        // 3. Logika Update Status untuk Ruangan
-        if ($peminjaman->ruangan_id) {
-            Ruangan::where('id', $peminjaman->ruangan_id)->update(['status' => 'Dipakai']);
-        }
-
-        // Jalankan update status transaksi peminjaman
-        $peminjaman->update(['status' => 'disetujui']);
-
-        // --- PROSES KIRIM NOTIFIKASI WHATSAPP VIA FONNTE ---
-        if ($peminjaman->nomor_wa) {
-            $namaAset = '';
-            $detailJumlah = '1 Unit';
-
-            if ($peminjaman->barang_id) {
-                $namaAset = $peminjaman->barang->nama_barang ?? 'Barang Inventaris';
-                $detailJumlah = $peminjaman->jumlah_item . ' Unit';
-            } elseif ($peminjaman->kendaraan_id) {
-                $namaAset = ($peminjaman->kendaraan->nama_kendaraan ?? 'Kendaraan') . ' [' . ($peminjaman->kendaraan->plat_nomor ?? '-') . ']';
-            } elseif ($peminjaman->ruangan_id) {
-                $namaAset = $peminjaman->ruangan->nama_ruangan ?? 'Ruangan/Aula';
-            }
-
-            // Susun template pesan teks rapi dengan fallback name jika objek null
-            $namaPeminjam = $peminjaman->user->name ?? 'Civitas PNUP';
-
-            $pesan = "Halo *" . $namaPeminjam . "*,\n\n"
-                   . "Pengajuan peminjaman Anda telah *DISETUJUI* oleh Admin Divisi Rumah Tangga PNUP.\n\n"
-                   . "📌 *Detail Aset :* " . $namaAset . "\n"
-                   . "🔢 *Jumlah :* " . $detailJumlah . "\n"
-                   . "📅 *Mulai Pinjam :* " . date('d M Y', strtotime($peminjaman->tgl_pinjam)) . "\n"
-                   . "📅 *Batas Kembali :* " . date('d M Y', strtotime($peminjaman->tgl_kembali)) . "\n"
-                   . "💡 *Keperluan :* " . ($peminjaman->keperluan ?? '-') . "\n\n"
-                   . "Silakan gunakan/ambil aset sesuai ketentuan jadwal di atas.\n"
-                   . "Terima kasih!\n\n"
-                   . "_- Sistem Pinjam-INV PNUP -_";
-
-            // Eksekusi kirim via Fonnte service
-            if (class_exists('App\Services\WhatsappService')) {
-                WhatsappService::sendMessage($peminjaman->nomor_wa, $pesan);
-            }
-        }
-
-        return redirect()->back()->with('success', 'Peminjaman disetujui dan notifikasi WA berhasil dikirim.');
     }
 
     /**
@@ -202,32 +265,32 @@ class PeminjamanController extends Controller
      */
     public function kembalikan($id) 
     {
-        $peminjaman = Peminjaman::findOrFail($id);
-        $statusCurrent = strtolower($peminjaman->status);
+        try {
+            DB::transaction(function () use ($id) {
+                $peminjaman = Peminjaman::lockForUpdate()->findOrFail($id);
 
-        if ($statusCurrent == 'disetujui') {
-            
-            // 1. Kembalikan Stok Barang
-            if ($peminjaman->barang_id) {
-                $peminjaman->barang()->increment('jumlah_stok', $peminjaman->jumlah_item);
-            }
+                if (strtolower($peminjaman->status) == 'disetujui') {
+                    if ($peminjaman->barang_id) {
+                        $peminjaman->barang()->increment('jumlah_stok', $peminjaman->jumlah_item);
+                    }
+                    if ($peminjaman->kendaraan_id) {
+                        Kendaraan::where('id', $peminjaman->kendaraan_id)->update(['status' => 'Tersedia']);
+                    }
+                    if ($peminjaman->ruangan_id) {
+                        Ruangan::where('id', $peminjaman->ruangan_id)->update(['status' => 'Tersedia']);
+                    }
 
-            // 2. Kembalikan Status Kendaraan menjadi Tersedia
-            if ($peminjaman->kendaraan_id) {
-                Kendaraan::where('id', $peminjaman->kendaraan_id)->update(['status' => 'Tersedia']);
-            }
+                    $peminjaman->update(['status' => 'dikembalikan']);
+                } else {
+                    throw new \Exception('Gagal memproses: Status transaksi tidak valid untuk dikembalikan.');
+                }
+            });
 
-            // 3. Kembalikan Status Ruangan menjadi Tersedia
-            if ($peminjaman->ruangan_id) {
-                Ruangan::where('id', $peminjaman->ruangan_id)->update(['status' => 'Tersedia']);
-            }
-
-            $peminjaman->update(['status' => 'dikembalikan']);
-            
             return redirect()->back()->with('success', 'Aset telah dikembalikan dan status dipulihkan menjadi Tersedia.');
-        }
 
-        return redirect()->back()->with('error', 'Gagal memproses pengembalian.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
     }
 
     /**
@@ -236,10 +299,8 @@ class PeminjamanController extends Controller
     public function tolak($id)
     {
         $peminjaman = Peminjaman::with(['user', 'barang', 'kendaraan', 'ruangan'])->findOrFail($id);
-        
         $peminjaman->update(['status' => 'ditolak']);
 
-        // --- PROSES KIRIM NOTIFIKASI WHATSAPP UNTUK STATUS DITOLAK ---
         if ($peminjaman->nomor_wa) {
             $namaAset = '';
             if ($peminjaman->barang_id) {
@@ -275,21 +336,29 @@ class PeminjamanController extends Controller
      */
     public function destroy($id)
     {
-        $peminjaman = Peminjaman::findOrFail($id);
-        
-        if ($peminjaman->status == 'disetujui') {
-            if ($peminjaman->barang_id) {
-                $peminjaman->barang()->increment('jumlah_stok', $peminjaman->jumlah_item);
-            }
-            if ($peminjaman->kendaraan_id) {
-                Kendaraan::where('id', $peminjaman->kendaraan_id)->update(['status' => 'Tersedia']);
-            }
-            if ($peminjaman->ruangan_id) {
-                Ruangan::where('id', $peminjaman->ruangan_id)->update(['status' => 'Tersedia']);
-            }
-        }
+        try {
+            DB::transaction(function () use ($id) {
+                $peminjaman = Peminjaman::lockForUpdate()->findOrFail($id);
+                
+                if ($peminjaman->status == 'disetujui') {
+                    if ($peminjaman->barang_id) {
+                        $peminjaman->barang()->increment('jumlah_stok', $peminjaman->jumlah_item);
+                    }
+                    if ($peminjaman->kendaraan_id) {
+                        Kendaraan::where('id', $peminjaman->kendaraan_id)->update(['status' => 'Tersedia']);
+                    }
+                    if ($peminjaman->ruangan_id) {
+                        Ruangan::where('id', $peminjaman->ruangan_id)->update(['status' => 'Tersedia']);
+                    }
+                }
 
-        $peminjaman->delete();
-        return redirect()->back()->with('success', 'Data peminjaman berhasil dihapus.');
+                $peminjaman->delete();
+            });
+
+            return redirect()->back()->with('success', 'Data peminjaman berhasil dihapus.');
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal menghapus data: ' . $e->getMessage());
+        }
     }
 }
