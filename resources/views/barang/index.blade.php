@@ -16,17 +16,6 @@
 @stop
 
 @section('content')
-
-{{-- Notifikasi Sukses Bawaan (Akan Otomatis Ditangkap SweetAlert2 Juga) --}}
-@if(session('success'))
-    <div class="alert alert-success alert-dismissible fade show shadow-sm d-none" role="alert">
-        <i class="icon fas fa-check-circle"></i> {{ session('success') }}
-        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-        </button>
-    </div>
-@endif
-
 <div class="row">
     @forelse($barangs as $b)
     <div class="col-md-4 col-sm-6 mb-4">
@@ -72,7 +61,7 @@
                 {{-- LOGIKA TOMBOL BERDASARKAN ROLE DAN KONDISI --}}
                 <div class="mt-3 border-top pt-3">
                     @if(Auth::user()->role == 'admin')
-                        {{-- TAMPILAN ADMIN: Menggunakan class="form-hapus" untuk SweetAlert2 --}}
+                        {{-- TAMPILAN ADMIN --}}
                         <div class="d-flex justify-content-between align-items-center">
                             <form action="{{ route('barang.destroy', $b->id) }}" method="POST" class="form-hapus">
                                 @csrf 
@@ -85,7 +74,7 @@
                             </a>
                         </div>
                     @else
-                        {{-- TAMPILAN USER: Filter Kondisi Rusak --}}
+                        {{-- TAMPILAN USER --}}
                         @if($b->kondisi == 'Rusak')
                             <button class="btn btn-secondary btn-block rounded-pill disabled" disabled>
                                 <i class="fas fa-exclamation-triangle mr-1"></i> Rusak (Tidak Bisa Pinjam)
@@ -114,53 +103,26 @@
 </div>
 @stop
 
+{{-- Menghubungkan File CSS Modular Barang --}}
 @section('css')
-<style>
-    .card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 12px 20px rgba(0,0,0,0.1) !important;
-    }
-    .badge { font-size: 0.75rem; }
-    .bg-light { background-color: #f8f9fa !important; }
-</style>
+<link class="stylesheet" href="{{ asset('css/barang.css') }}">
 @stop
 
+{{-- Menghubungkan File JS Modular Barang --}}
 @section('js')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="{{ asset('js/barang.js') }}"></script>
+
+{{-- Trigger SweetAlert jika ada session success --}}
+@if(session('success'))
 <script>
-    $(document).ready(function () {
-        // 1. POPUP KONFIRMASI SEBELUM HAPUS BARANG
-        $(document).on('submit', '.form-hapus', function(e) {
-            e.preventDefault();
-            var form = this;
-
-            Swal.fire({
-                title: 'Apakah Anda yakin?',
-                text: "Data barang inventaris ini akan dihapus secara permanen dari sistem!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Ya, Hapus!',
-                cancelButtonText: 'Batal',
-                allowOutsideClick: false
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    form.submit();
-                }
-            });
-        });
-
-        // 2. POPUP NOTIFIKASI BERHASIL DIHAPUS / DISIMPAN
-        @if(session('success'))
-            Swal.fire({
-                title: 'Berhasil!',
-                text: "{{ session('success') }}",
-                icon: 'success',
-                confirmButtonColor: '#3085d6',
-                confirmButtonText: 'Oke'
-            });
-        @endif
+    Swal.fire({
+        title: 'Berhasil!',
+        text: "{{ session('success') }}",
+        icon: 'success',
+        confirmButtonColor: '#3085d6',
+        confirmButtonText: 'Oke'
     });
 </script>
+@endif
 @stop

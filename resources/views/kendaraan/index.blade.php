@@ -3,33 +3,69 @@
 @section('title', 'Daftar Kendaraan')
 
 @section('content_header')
-    <div class="d-flex justify-content-between align-items-center">
-        <h1 class="font-weight-bold text-dark"><i class="fas fa-car-side mr-2"></i> Manajemen Kendaraan PNUP</h1>
+    <div class="d-flex justify-content-between align-items-center flex-wrap">
+        <h1 class="font-weight-bold text-dark"><i class="fas fa-car-side mr-2 text-primary"></i> Manajemen Kendaraan PNUP</h1>
         
         {{-- TOMBOL TAMBAH HANYA UNTUK ADMIN --}}
         @if(Auth::user()->role == 'admin')
-            <a href="{{ route('kendaraan.create') }}" class="btn btn-warning shadow-sm">
-                <i class="fas fa-plus-circle"></i> Tambah Kendaraan
+            <a href="{{ route('kendaraan.create') }}" class="btn btn-warning font-weight-bold shadow-sm mb-2">
+                <i class="fas fa-plus-circle mr-1"></i> Tambah Kendaraan
             </a>
         @endif
     </div>
 @stop
 
 @section('content')
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-md-end justify-content-start flex-wrap align-items-center">
+        
+        <div class="mb-2 mb-md-0 mr-md-2" style="width: 180px;">
+            <select name="jenis_kendaraan" class="form-control shadow-sm style-select-kustom" onchange="filterAsetKendaraan()" id="filterJenis" style="border-radius: 10px; height: calc(2.25rem + 6px);">
+                <option value="">🚗 Semua Jenis</option>
+                <option value="Mobil" {{ request('jenis_kendaraan') == 'Mobil' ? 'selected' : '' }}>Mobil</option>
+                <option value="Motor" {{ request('jenis_kendaraan') == 'Motor' ? 'selected' : '' }}>Motor</option>
+                {{-- VALUE DIUBAH MENJADI "Bus" AGAR COCOK DENGAN DATA DI DATABASE --}}
+                <option value="Bus" {{ request('jenis_kendaraan') == 'Bus' ? 'selected' : '' }}>Bus / Elf</option>
+                <option value="Mobil Tangki" {{ request('jenis_kendaraan') == 'Mobil Tangki' ? 'selected' : '' }}>Mobil Tangki</option>
+                <option value="Gerobak Tarik" {{ request('jenis_kendaraan') == 'Gerobak Tarik' ? 'selected' : '' }}>Gerobak Tarik</option>
+            </select>
+        </div>
 
-@if(session('success'))
-    <div class="alert alert-success alert-dismissible fade show d-none" role="alert">
-        <i class="icon fas fa-check"></i> {{ session('success') }}
-        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-        </button>
+        <div class="mb-2 mb-md-0" style="width: 280px; max-width: 100%;">
+            <form action="{{ request()->url() }}" method="GET" id="formSearchKendaraan" class="d-flex w-100">
+                {{-- Mengunci filter jenis yang sedang aktif saat mencari kata kunci --}}
+                @if(request('jenis_kendaraan')) 
+                    <input type="hidden" name="jenis_kendaraan" value="{{ request('jenis_kendaraan') }}"> 
+                @endif
+                
+                <div class="input-group shadow-sm border-0">
+                    <input type="text" name="search" class="form-control form-search-kustom" 
+                           placeholder="Cari merek atau plat nomor..." 
+                           value="{{ request('search') }}"
+                           style="border-radius: 10px 0 0 10px; height: calc(2.25rem + 6px);">
+                    <div class="input-group-append">
+                        <button class="btn btn-primary px-3" type="submit" style="border-radius: 0 10px 10px 0;">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+                @if(request('search'))
+                    <a href="{{ request()->url() . (request('jenis_kendaraan') ? '?jenis_kendaraan='.request('jenis_kendaraan') : '') }}" 
+                       class="btn btn-secondary ml-2 d-flex align-items-center justify-content-center shadow-sm btn-clear-kustom"
+                       style="border-radius: 10px;" title="Reset Pencarian">
+                       Reset
+                    </a>
+                @endif
+            </form>
+        </div>
+
     </div>
-@endif
+</div>
 
 <div class="row">
     @forelse($kendaraans as $k)
     <div class="col-md-4 mb-4">
-        <div class="card card-outline card-warning shadow-sm h-100" style="border-radius: 15px;">
+        <div class="card card-outline card-warning shadow-sm h-100 card-ruangan-kustom" style="border-radius: 15px;">
             <div class="card-body box-profile d-flex flex-column">
                 
                 {{-- Logika Ikon Otomatis --}}
@@ -58,7 +94,7 @@
                     </p>
                 </div>
 
-                {{-- UPDATE BARU: Grid Info Kondisi, Status, dan Surat Izin --}}
+                {{-- Grid Info Kondisi, Status, dan Surat Izin --}}
                 <div class="row text-center mb-3 py-2 bg-light rounded mx-0">
                     <div class="col-4 border-right px-1">
                         <small class="d-block text-muted">Kondisi</small>
@@ -66,7 +102,6 @@
                     </div>
                     <div class="col-4 border-right px-1">
                         <small class="d-block text-muted">Surat Izin</small>
-                        {{-- Logika: Jika Motor tidak wajib surat, selain itu wajib --}}
                         @if($k->jenis_kendaraan == 'Motor')
                             <span class="text-muted font-weight-bold small"><i class="fas fa-times-circle mr-1"></i> Tidak</span>
                         @else
@@ -75,7 +110,9 @@
                     </div>
                     <div class="col-4 px-1">
                         <small class="d-block text-muted">Status</small>
-                        @if($k->status == 'Tersedia')
+                        @if($k->kondisi == 'Servis' || $k->kondisi == 'Rusak Berat')
+                            <span class="badge badge-secondary px-2 py-0">Mogok</span>
+                        @elseif($k->status == 'Tersedia')
                             <span class="badge badge-success px-2 py-0">Tersedia</span>
                         @else
                             <span class="badge badge-danger px-2 py-0">Dipinjam</span>
@@ -83,9 +120,9 @@
                     </div>
                 </div>
 
-                {{-- PENAMBAHAN: Estimasi Batas Waktu Pemakaian Kendaraan --}}
-                @if($k->status == 'Dipinjam')
-                    <div class="mt-1 mb-3 p-2 bg-light rounded text-danger text-center border border-danger-soft" style="font-size: 0.85rem; background-color: #fff5f5;">
+                {{-- Estimasi Batas Waktu Pemakaian Kendaraan --}}
+                @if($k->status == 'Dipinjam' && $k->kondisi != 'Servis' && $k->kondisi != 'Rusak Berat')
+                    <div class="mt-1 mb-3 p-2 rounded text-danger text-center border border-danger-soft animate-pulse-container" style="font-size: 0.85rem; background-color: #fff5f5;">
                         <i class="fas fa-clock mr-1 animate-pulse"></i> 
                         <strong>Dipinjam s.d:</strong> <br>
                         @if($k->peminjamanAktif && $k->peminjamanAktif->tgl_kembali)
@@ -97,12 +134,12 @@
                 @endif
 
                 <div class="d-flex justify-content-between align-items-center mt-auto pt-3 border-top">
-                    {{-- AKSI ADMIN: HAPUS MODEREN MENGGUNAKAN INTERCEPTOR SWEETALERT2 --}}
+                    {{-- AKSI ADMIN: HAPUS MENGGUNAKAN INTERCEPTOR SWEETALERT2 --}}
                     @if(Auth::user()->role == 'admin')
-                        <form action="{{ route('kendaraan.destroy', $k->id) }}" method="POST" class="form-hapus">
+                        <form action="{{ route('kendaraan.destroy', $k->id) }}" method="POST" class="form-hapus-kustom m-0">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="btn btn-link text-danger p-0 text-decoration-none">
+                            <button type="button" class="btn btn-link text-danger p-0 text-decoration-none btn-konfirmasi-hapus">
                                 <i class="fas fa-trash"></i> Hapus
                             </button>
                         </form>
@@ -116,16 +153,20 @@
                             </a>
                         @endif
 
-                        {{-- AKSI SEMUA USER: PINJAM --}}
-                        @if($k->status == 'Tersedia')
+                        {{-- PERBAIKAN LOGIKA PINJAM --}}
+                        @if($k->status == 'Tersedia' && ($k->kondisi == 'Baik' || $k->kondisi == 'Rusak Ringan'))
                             <button type="button" 
                                     onclick="cekSuratIzinKendaraan('{{ route('peminjaman.create', ['item_id' => $k->id, 'kategori' => 'kendaraan']) }}')"
-                                    class="btn btn-success btn-sm rounded-pill px-3 shadow-sm">
+                                    class="btn btn-success btn-sm rounded-pill px-3 shadow-sm font-weight-bold btn-pinjam-kustom">
                                 <i class="fas fa-key mr-1"></i> Pinjam
                             </button>
                         @else
-                            <button class="btn btn-secondary btn-sm rounded-pill px-3 disabled" disabled>
-                                <i class="fas fa-lock mr-1"></i> Terpakai
+                            <button type="button" class="btn btn-secondary btn-sm rounded-pill px-3" disabled>
+                                @if($k->status == 'Dipinjam' && ($k->kondisi == 'Baik' || $k->kondisi == 'Rusak Ringan'))
+                                    <i class="fas fa-ban mr-1"></i> Dipinjam
+                                @else
+                                    <i class="fas fa-tools mr-1"></i> Perbaikan
+                                @endif
                             </button>
                         @endif
                     </div>
@@ -135,117 +176,58 @@
     </div>
     @empty
     <div class="col-12 text-center py-5">
-        <i class="fas fa-car-crash fa-5x text-light mb-3"></i>
-        <h4 class="text-secondary">Belum ada data kendaraan operasional.</h4>
+        <div class="card shadow-none border-0 bg-transparent py-4">
+            <i class="fas fa-search fa-4x text-muted mb-3"></i>
+            <h4 class="text-secondary font-weight-bold">Data tidak ditemukan</h4>
+            <p class="text-muted mx-auto" style="max-width: 400px;">
+                Aset kendaraan dinas operasional dengan filter atau kata kunci yang Anda cari tidak terdaftar dalam sistem Rumah Tangga PNUP.
+            </p>
+            <div class="mt-2">
+                <a href="{{ route('kendaraan.index') }}" class="btn btn-sm btn-primary shadow-sm rounded-pill px-4">
+                    <i class="fas fa-sync-alt mr-1"></i> Reset Pencarian
+                </a>
+            </div>
+        </div>
     </div>
     @endforelse
 </div>
 @stop
 
 @section('css')
-<style>
-    .card { transition: transform .2s; }
-    .card:hover { transform: scale(1.02); }
-    .profile-username { font-size: 1.25rem; color: #343a40; }
-    .text-secondary { line-height: 1.2; }
-    .border-top { border-top: 1px solid #f4f4f4 !important; }
-    
-    /* Animasi berkedip pelan pada ikon jam */
-    .animate-pulse {
-        animation: pulse 2s infinite;
-    }
-    @keyframes pulse {
-        0% { opacity: 1; }
-        50% { opacity: 0.4; }
-        100% { opacity: 1; }
-    }
-</style>
+<link class="css-kustom" rel="stylesheet" href="{{ asset('css/kendaraan.css') }}">
 @stop
 
 @section('js')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="{{ asset('js/kendaraan.js') }}?v={{ time() }}"></script>
+
 <script>
-    $(document).ready(function () {
-        // 1. PEMBERITAHUAN KONFIRMASI SEBELUM HAPUS KENDARAAN
-        $(document).on('submit', '.form-hapus', function(e) {
-            e.preventDefault();
-            var form = this;
-
-            Swal.fire({
-                title: 'Apakah Anda yakin?',
-                text: "Data kendaraan ini akan dihapus secara permanen dari sistem!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Ya, Hapus!',
-                cancelButtonText: 'Batal',
-                allowOutsideClick: false
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    form.submit();
-                }
-            });
-        });
-
-        // 2. PEMBERITAHUAN SETELAH BERHASIL DIHAPUS / DIUPDATE
-        @if(session('success'))
-            Swal.fire({
-                title: 'Berhasil!',
-                text: "{{ session('success') }}",
-                icon: 'success',
-                confirmButtonColor: '#3085d6',
-                confirmButtonText: 'Oke'
-            });
-        @endif
-    });
-
-    // 3. LOGIKA POPUP SURAT IZIN JALAN KENDARAAN (MENDUKUNG ALUR MAHASISWA & STAF/DOSEN)
-    function cekSuratIzinKendaraan(urlTujuan) {
-        Swal.fire({
-            title: 'Konfirmasi Surat Izin Jalan',
-            text: 'Apakah Anda sudah memiliki surat izin resmi untuk penggunaan kendaraan operasional ini?',
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#28a745',
-            cancelButtonColor: '#dc3545',
-            confirmButtonText: 'Ya, Sudah Ada',
-            cancelButtonText: 'Belum Ada',
-            allowOutsideClick: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-                window.location.href = urlTujuan;
-            } else if (result.dismiss === Swal.DismissReason.cancel) {
-                Swal.fire({
-                    title: 'Informasi Persuratan Kendaraan',
-                    html: `<div style="text-align: left; font-size: 14px; line-height: 1.6;">
-                            <p>Sesuai prosedur operasional Divisi Rumah Tangga PNUP, peminjaman kendaraan operasional diwajibkan melampirkan berkas surat izin peminjaman resmi.</p>
-                            
-                            <b class="text-warning"><i class="fas fa-file-alt"></i> Alur Pengurusan Surat Izin Kendaraan PNUP:</b>
-                            
-                            <div class="mt-2" style="border-left: 3px solid #ffc107; padding-left: 10px; margin-bottom: 12px;">
-                                <strong class="text-primary"><i class="fas fa-user-graduate"></i> KHUSUS MAHASISWA:</strong>
-                                <ol style="margin-top: 5px; padding-left: 20px; margin-bottom: 5px;">
-                                    <li>Membuat surat izin penggunaan kendaraan operasional kampus yang ditujukan kepada <b>Wakil Direktur III (Wadir 3)</b>.</li>
-                                    <li>Membawa berkas surat tersebut untuk disahkan atau ditandatangani oleh <b>Wakil Direktur II (Wadir 2)</b>.</li>
-                                </ol>
-                            </div>
-
-                            <div style="border-left: 3px solid #28a745; padding-left: 10px;">
-                                <strong class="text-success"><i class="fas fa-user-tie"></i> STAF & DOSEN:</strong>
-                                <ol style="margin-top: 5px; padding-left: 20px; margin-bottom: 5px;">
-                                    <li>Dapat langsung bersurat resmi ke <b>Divisi Rumah Tangga PNUP</b> tanpa melalui Wakil Direktur.</li>
-                                </ol>
-                            </div>
-                            
-                            <p class="mt-3 small text-muted" style="border-top: 1px dashed #ddd; padding-top: 8px;"><i class="fas fa-info-circle"></i> Setelah surat resmi ber-nomor diterbitkan, silakan kembali lagi ke sistem ini untuk melanjutkan pengisian form dan mengunggah berkas PDF surat izin tersebut.</p>
-                           </div>`,
-                    icon: 'info',
-                    confirmButtonText: 'Saya Mengerti',
-                    confirmButtonColor: '#007bff'
-                });
-            }
-        });
+    function filterAsetKendaraan() {
+        let jenis = document.getElementById('filterJenis').value;
+        let currentUrl = new URL(window.location.href);
+        
+        if (jenis) {
+            currentUrl.searchParams.set('jenis_kendaraan', jenis);
+        } else {
+            currentUrl.searchParams.delete('jenis_kendaraan');
+        }
+        
+        // Bersihkan filter status bawaan agar tidak bentrok
+        currentUrl.searchParams.delete('status');
+        
+        window.location.href = currentUrl.toString();
     }
 </script>
+
+@if(session('success'))
+<script>
+    Swal.fire({
+        title: 'Berhasil!',
+        text: "{{ session('success') }}",
+        icon: 'success',
+        confirmButtonColor: '#3085d6',
+        confirmButtonText: 'Oke'
+    });
+</script>
+@endif
 @stop

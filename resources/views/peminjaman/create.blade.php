@@ -12,7 +12,6 @@
         <h3 class="card-title">Input Detail Peminjaman</h3>
     </div>
     
-    {{-- 1. WAJIB TAMBAH MULTIPART ENCTYPE UNTUK UPLOAD FILE --}}
     <form action="{{ route('peminjaman.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
         <div class="card-body">
@@ -76,7 +75,7 @@
                 </div>
             </div>
 
-            {{-- 2. KOMPONEN INPUT BERKAS PDF SURAT IZIN (DITAMPILKAN SECARA DINAMIS VIA JAVASCRIPT) --}}
+            {{-- Komponen Input Berkas PDF Surat Izin --}}
             <div class="form-group mt-2" id="container-surat-izin" style="display: none;">
                 <label for="surat_izin" class="font-weight-bold text-danger">
                     <i class="fas fa-file-pdf mr-1"></i> Upload Dokumen Surat Izin Resmi Kampus (Format: PDF, Maks: 2MB) *
@@ -165,70 +164,29 @@
 </div>
 @stop
 
+{{-- Hubungkan File Aset Eksternal Modul Peminjaman --}}
+@section('css')
+<link rel="stylesheet" href="{{ asset('css/peminjaman.css') }}">
+@stop
+
 @section('js')
+<script src="{{ asset('js/peminjaman.js') }}"></script>
 <script>
-    $(document).ready(function() {
-        // 1. Validasi Tanggal Dinamis
-        $('#tgl_pinjam').on('change', function() {
-            var selectedDate = $(this).val();
-            $('#tgl_kembali').attr('min', selectedDate);
-            
-            if ($('#tgl_kembali').val() < selectedDate) {
-                $('#tgl_kembali').val(selectedDate);
-            }
-        });
-
-        // 2. FUNGSI LOGIKA DETEKSI UPLOAD SURAT IZIN (KHUSUS RUANGAN & KENDARAAN)
-        function handleSuratIzinVisibility(kategori) {
-            if (kategori === 'ruangan' || kategori === 'kendaraan') {
-                // Tampilkan input berkas dan buat kolomnya wajib diisi
-                $('#container-surat-izin').slideDown();
-                $('#surat_izin').attr('required', true);
-            } else {
-                // Sembunyikan input berkas jika memilih barang
-                $('#container-surat-izin').slideUp();
-                $('#surat_izin').attr('required', false);
-                $('#surat_izin').val(''); // Reset isi file jika kategori diganti
-            }
-        }
-
-        // Jalankan fungsi saat halaman pertama kali dimuat (menjaga data kiriman dari tombol luar)
-        var kategoriAwal = $('#pilih-kategori').val();
-        handleSuratIzinVisibility(kategoriAwal);
-
-        // Jalankan fungsi setiap kali dropdown kategori diganti oleh peminjam
-        $('#pilih-kategori').on('change', function() {
-            var kategori = $(this).val();
-            
-            // Toggle form utama bawaan
-            $('.form-kategori').hide();
-            $('#form-' + kategori).show();
-            
-            // Jalankan toggle validasi upload surat izin
-            handleSuratIzinVisibility(kategori);
-        });
-
-        // 3. Tambah Baris Barang
-        $('#addRow').click(function() {
-            var newRow = `<tr>
-                <td>
-                    <select name="barang_id[]" class="form-control">
-                        <option value="">-- Pilih Barang --</option>
-                        @foreach($barangs as $b)
-                            <option value="{{ $b->id }}">{{ $b->nama_barang }}</option>
-                        @endforeach
-                    </select>
-                </td>
-                <td><input type="number" name="jumlah[]" class="form-control" value="1" min="1"></td>
-                <td><button type="button" class="btn btn-danger btn-sm remove-row"><i class="fas fa-trash"></i></button></td>
-            </tr>`;
-            $('#tableBarang tbody').append(newRow);
-        });
-
-        // 4. Hapus Baris Barang
-        $(document).on('click', '.remove-row', function() {
-            $(this).closest('tr').remove();
-        });
+    // Penambahan Baris Menggunakan Perulangan Server Blade tetap ditaruh inline
+    $('#addRow').click(function() {
+        var newRow = `<tr>
+            <td>
+                <select name="barang_id[]" class="form-control">
+                    <option value="">-- Pilih Barang --</option>
+                    @foreach($barangs as $b)
+                        <option value="{{ $b->id }}">{{ $b->nama_barang }}</option>
+                    @endforeach
+                </select>
+            </td>
+            <td><input type="number" name="jumlah[]" class="form-control" value="1" min="1"></td>
+            <td><button type="button" class="btn btn-danger btn-sm remove-row"><i class="fas fa-trash"></i></button></td>
+        </tr>`;
+        $('#tableBarang tbody').append(newRow);
     });
 </script>
 @stop

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Barang;
-use App\Models\Kategori;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -18,12 +17,13 @@ class BarangController extends Controller
     }
 
     /**
-     * 1. Menampilkan daftar inventaris barang.
+     * 1. Menampilkan daftar inventaris barang diurutkan berdasarkan Abjad A-Z.
      * Terbuka untuk seluruh pengguna yang telah terautentikasi.
      */
     public function index()
     {
-        $barangs = Barang::all();
+        // PERBAIKAN: Mengurutkan data inventaris barang berdasarkan nama_barang (A ke Z)
+        $barangs = Barang::orderBy('nama_barang', 'asc')->get();
         return view('barang.index', compact('barangs'));
     }
 
@@ -37,12 +37,11 @@ class BarangController extends Controller
             abort(403, 'Anda tidak memiliki hak akses untuk halaman ini.');
         }
 
-        $kategoris = Kategori::orderBy('kategori_induk', 'asc')->get();
-        return view('barang.create', compact('kategoris'));
+        return view('barang.create');
     }
 
     /**
-     * 3. Menyimpan data barang baru ke database (Mendukung 6 Field Form BMN).
+     * 3. Menyimpan data barang baru ke database (Mendukung 5 Field Form BMN).
      * PROTEKSI: Khusus Admin.
      */
     public function store(Request $request)
@@ -51,7 +50,7 @@ class BarangController extends Controller
             abort(403, 'Aksi tidak diizinkan.');
         }
 
-        // Validasi input dari 6 field form baru Anda (Tabel sudah diarahkan ke 'barang')
+        // Validasi input dari form BMN
         $request->validate([
             'kode_barang' => 'required|string|max:100|unique:barang,kode_inventaris',
             'nup'         => 'required|numeric|min:1',
@@ -67,7 +66,6 @@ class BarangController extends Controller
         $barang->nama_barang     = $request->nama_barang; // Nama Barang ke nama_barang
         $barang->kondisi         = $request->kondisi;     // Kondisi ke kondisi
         $barang->jumlah_stok     = $request->nup;         // NUP ke jumlah_stok (Sebagai Jumlah)
-        $barang->kategori_id     = $request->nup;         // NUP ke kategori_id (Sebagai arsip NUP)
         
         // Menggabungkan Merk dan Keterangan Tambahan ke dalam kolom ruangan_id agar semua info aman tersimpan
         $barang->ruangan_id      = 'Merk: ' . $request->merk . ' | ' . ($request->keterangan ?? 'Tanpa Keterangan');
@@ -91,9 +89,7 @@ class BarangController extends Controller
         }
 
         $barang = Barang::findOrFail($id);
-        $kategoris = Kategori::orderBy('kategori_induk', 'asc')->get();
-
-        return view('barang.edit', compact('barang', 'kategoris'));
+        return view('barang.edit', compact('barang'));
     }
 
     /**
@@ -108,7 +104,7 @@ class BarangController extends Controller
 
         $barang = Barang::findOrFail($id);
 
-        // Validasi input edit untuk 6 field form baru Anda (Tabel sudah diarahkan ke 'barang')
+        // Validasi input edit untuk form BMN
         $request->validate([
             'kode_barang' => 'required|string|max:100|unique:barang,kode_inventaris,' . $id,
             'nup'         => 'required|numeric|min:1',
@@ -123,7 +119,6 @@ class BarangController extends Controller
         $barang->nama_barang     = $request->nama_barang;
         $barang->kondisi         = $request->kondisi;
         $barang->jumlah_stok     = $request->nup;
-        $barang->kategori_id     = $request->nup;
         $barang->ruangan_id      = 'Merk: ' . $request->merk . ' | ' . ($request->keterangan ?? 'Tanpa Keterangan');
         
         $barang->save();

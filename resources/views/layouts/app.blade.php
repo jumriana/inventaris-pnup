@@ -9,40 +9,12 @@
 
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 
     @vite(['resources/sass/app.scss', 'resources/js/app.js'])
 
-    <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: #f0f2f5 !important;
-            color: #333;
-        }
-        .navbar {
-            background-color: #ffffff !important;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
-        }
-        .card {
-            border: none !important;
-            border-radius: 20px !important;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05) !important;
-        }
-        .form-control {
-            background-color: #f8f9fa !important;
-            border: 1px solid #e9ecef !important;
-            border-radius: 12px !important;
-            padding: 12px 15px !important;
-        }
-        .btn-primary {
-            background-color: #007bff !important;
-            border: none !important;
-            border-radius: 12px !important;
-            padding: 10px 20px !important;
-            font-weight: 600 !important;
-        }
-    </style>
+    {{-- Memanggil File CSS Global --}}
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}">
 </head>
 <body>
     <div id="app">
@@ -117,10 +89,9 @@
 
     <script>
         $(document).ready(function () {
-            // 1. INTERSEPTOR TOMBOL HAPUS GLOBAL (Berlaku untuk semua form dengan class 'form-hapus')
+            // Interceptor tombol hapus massal dipertahankan di layout induk agar melindung seluruh view anak
             $(document).on('submit', '.form-hapus', function (e) {
-                e.preventDefault(); // Menahan form agar tidak langsung terhapus
-                
+                e.preventDefault();
                 var form = this;
 
                 Swal.fire({
@@ -134,12 +105,12 @@
                     cancelButtonText: 'Batal'
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        form.submit(); // Submit form jika user memilih tombol "Ya, Hapus!"
+                        form.submit();
                     }
                 });
             });
 
-            // 2. POPUP NOTIFIKASI BERHASIL DIHAPUS (Muncul otomatis jika ada session success)
+            {{-- Menjaga eksekusi alert dinamis session bawaan framework agar tetap berjalan normal --}}
             @if(session('success'))
                 Swal.fire({
                     title: 'Berhasil!',

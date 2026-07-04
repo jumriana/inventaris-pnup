@@ -9,6 +9,9 @@ use Carbon\Carbon;
 
 class ReportController extends Controller
 {
+    /**
+     * Menampilkan daftar laporan di halaman dashboard admin.
+     */
     public function index(Request $request)
     {
         // Load semua relasi aset agar tidak error saat pemanggilan di Blade
@@ -28,6 +31,9 @@ class ReportController extends Controller
         return view('admin.report.index', compact('reports'));
     }
 
+    /**
+     * Mengekspor data laporan peminjaman ke dalam format berkas PDF Potret (A4).
+     */
     public function exportPDF(Request $request)
     {
         $query = Peminjaman::with(['user', 'barang', 'kendaraan', 'ruangan']);
@@ -43,16 +49,18 @@ class ReportController extends Controller
         // Variabel harus bernama $data agar sinkron dengan template PDF HTML standar Anda
         $data = $query->orderBy('tgl_pinjam', 'desc')->get(); 
         
-        // Memformat rentang tanggal agar bisa tampil cantik di KOP Surat berkas PDF laporan
+        // Memformat rentang tanggal mentah agar aman diurai oleh fungsi penangkal bug di pdf.blade.php
         $date_range = [
-            'start' => $request->start_date ? Carbon::parse($request->start_date)->format('d/m/Y') : '-',
-            'end' => $request->end_date ? Carbon::parse($request->end_date)->format('d/m/Y') : '-'
+            'start' => $request->start_date ?? null,
+            'end' => $request->end_date ?? null
         ];
 
+        // MERNDER VIEW & MENYETEL KERTAS MENJADI POTRET (A4 - Portrait)
         $pdf = Pdf::loadView('admin.report.pdf', compact('data', 'date_range'))
-                  ->setPaper('a4', 'landscape'); 
+                  ->setPaper('a4', 'portrait'); 
 
-        return $pdf->download('Laporan_Peminjaman_' . Carbon::now()->format('d-m-Y') . '.pdf');
+        // Menggunakan stream agar tampil preview di browser terlebih dahulu sebelum diunduh
+        return $pdf->stream('Laporan_Peminjaman_' . Carbon::now()->format('d-m-Y') . '.pdf');
     }
 
     /**

@@ -18,14 +18,32 @@ class RuanganController extends Controller
     }
 
     /**
-     * 1. Menampilkan daftar semua ruangan beserta estimasi waktu pemakaian (Eager Loading).
+     * 1. Menampilkan daftar semua ruangan dengan urutan status kustom (Eager Loading).
+     * Diperbarui dengan fitur pencarian (search) dan filter cepat (status).
      * Dapat diakses oleh Admin maupun User umum.
      */
-    public function index()
+    public function index(Request $request)
     {
-        // PERBAIKAN: Memuat relasi 'peminjamans' dan 'peminjamanAktif' secara bersamaan
-        // agar logika penyaringan status 'disetujui' di file Blade dapat terbaca dengan sempurna.
-        $ruangans = Ruangan::with(['peminjamans', 'peminjamanAktif'])->get();
+        // 1. Inisialisasi query dasar beserta Eager Loading relasi
+        $query = Ruangan::with(['peminjamans', 'peminjamanAktif']);
+
+        // 2. Logika Pencarian Kata Kunci (Berdasarkan Nama Ruangan atau Lokasi)
+        if ($request->has('search') && $request->search != '') {
+            $query->where(function($q) use ($request) {
+                $q->where('nama_ruangan', 'like', '%' . $request->search . '%')
+                  ->orWhere('lokasi', 'like', '%' . $request->search . '%');
+            });
+        }
+
+        // 3. Logika Filter Cepat Status (Tersedia, Dipakai, Perbaikan)
+        if ($request->has('status') && $request->status != '') {
+            $query->where('status', $request->status);
+        }
+
+        // 4. Pengurutan Kustom: Tersedia -> Dipakai -> Perbaikan
+        $ruangans = $query->orderByRaw("FIELD(status, 'Tersedia', 'Dipakai', 'Perbaikan')")
+                          ->get();
+
         return view('ruangan.index', compact('ruangans'));
     }
 
@@ -60,10 +78,9 @@ class RuanganController extends Controller
             'gambar'       => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
         ]);
 
-        // Proteksi mass assignment dengan membatasi field input yang diambil
         $data = $request->only(['kode_ruangan', 'nama_ruangan', 'lokasi', 'kapasitas', 'keterangan']);
 
-        // LOGIKA OTOMATIS SURAT IZIN
+        // Logika otomatis penentuan wajib surat izin
         $nama = strtolower($request->nama_ruangan);
         if (str_contains($nama, 'aula') || str_contains($nama, 'auditorium') || str_contains($nama, 'teater')) {
             $data['butuh_surat'] = 1; 
@@ -112,17 +129,20 @@ class RuanganController extends Controller
 
         $ruangan = Ruangan::findOrFail($id);
         
-        // PERBAIKAN: Menambahkan validasi unik kode_ruangan dengan pengecualian ID saat ini (. $id)
+        // Validasi data input form edit
         $request->validate([
             'kode_ruangan' => 'required|string|max:50|unique:ruangan,kode_ruangan,' . $id,
             'nama_ruangan' => 'required|string|max:255',
             'lokasi'       => 'required|string|max:255',
             'kapasitas'    => 'required|numeric|min:1',
-            'status'       => 'required|in:Tersedia,Dipakai,Perbaikan',
+            'status'       => 'nullable|in:Tersedia,Dipakai,Perbaikan',
             'gambar'       => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
         ]);
 
-        $data = $request->only(['kode_ruangan', 'nama_ruangan', 'lokasi', 'kapasitas', 'status', 'keterangan']);
+        $data = $request->only(['kode_ruangan', 'nama_ruangan', 'lokasi', 'kapasitas', 'keterangan']);
+
+        // Ambil nilai status baru dari form, jika form tidak mengirimkannya gunakan status lama di database
+        $data['status'] = $request->input('status', $ruangan->status);
 
         // Logika otomatis surat izin tetap berjalan jika nama_ruangan ikut diubah
         $nama = strtolower($request->nama_ruangan);
@@ -160,7 +180,6 @@ class RuanganController extends Controller
 
         $ruangan = Ruangan::findOrFail($id);
 
-        // Hapus file gambar secara fisik di storage sebelum record database dihapus
         if ($ruangan->gambar) {
             $path = public_path('img/ruangan/' . $ruangan->gambar);
             if (File::exists($path)) {

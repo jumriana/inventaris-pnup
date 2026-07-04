@@ -55,7 +55,13 @@
                         <td class="align-middle">
                             <span class="font-weight-bold d-block">{{ $p->user->name ?? 'Civitas PNUP (User Terhapus)' }}</span>
                             @if($p->nomor_wa)
-                                <a href="https://wa.me/{{ $p->nomor_wa }}" target="_blank" class="badge badge-success shadow-sm">
+                                @php
+                                    $nomorBersih = preg_replace('/[^0-9]/', '', $p->nomor_wa);
+                                    if (str_starts_with($nomorBersih, '0')) {
+                                        $nomorBersih = '62' . substr($nomorBersih, 1);
+                                    }
+                                @endphp
+                                <a href="https://api.whatsapp.com/send?phone={{ $nomorBersih }}" target="_blank" class="badge badge-success shadow-sm">
                                     <i class="fab fa-whatsapp mr-1"></i> {{ $p->nomor_wa }}
                                 </a>
                             @else
@@ -77,7 +83,6 @@
                                 <small class="text-muted">Aula/Ruang Rapat</small>
                             @endif
 
-                            {{-- TOMBOL LIHAT BERKAS SURAT IZIN PDF --}}
                             @if($p->surat_izin)
                                 <div class="mt-2">
                                     <a href="{{ asset('storage/' . $p->surat_izin) }}" target="_blank" class="btn btn-xs btn-outline-danger rounded-pill shadow-sm px-2">
@@ -113,7 +118,6 @@
                         <td class="text-center align-middle">
                             <div class="btn-group">
                                 @if(strtolower($p->status) == 'pending')
-                                    {{-- FORM SETUJUI (SWEETALERT) --}}
                                     <form action="{{ route('peminjaman.setujui', $p->id) }}" method="POST" class="d-inline form-setujui">
                                         @csrf
                                         @method('PUT')
@@ -121,7 +125,6 @@
                                             <i class="fas fa-check"></i> Setujui
                                         </button>
                                     </form>
-                                    {{-- FORM TOLAK (SWEETALERT) --}}
                                     <form action="{{ route('peminjaman.tolak', $p->id) }}" method="POST" class="d-inline form-tolak">
                                         @csrf
                                         @method('PUT')
@@ -132,7 +135,6 @@
                                 @endif
 
                                 @if(strtolower($p->status) == 'disetujui')
-                                    {{-- FORM KEMBALIKAN (SWEETALERT) --}}
                                     <form action="{{ route('peminjaman.kembalikan', $p->id) }}" method="POST" class="form-kembalikan">
                                         @csrf
                                         @method('PUT')
@@ -143,7 +145,6 @@
                                 @endif
 
                                 @if(strtolower($p->status) == 'dikembalikan' || strtolower($p->status) == 'ditolak')
-                                    {{-- FORM HAPUS (SWEETALERT) --}}
                                     <form action="{{ route('peminjaman.destroy', $p->id) }}" method="POST" class="form-hapus">
                                         @csrf
                                         @method('DELETE')
@@ -172,118 +173,13 @@
 </div>
 @stop
 
+{{-- Hubungkan File CSS Eksternal Modul Peminjaman --}}
 @section('css')
-<style>
-    .table thead th { 
-        border-top: none; 
-        text-transform: uppercase; 
-        font-size: 0.75rem; 
-        color: #6c757d;
-        letter-spacing: 0.5px; 
-    }
-    .table tbody tr:hover { 
-        background-color: rgba(40, 167, 69, 0.03); 
-        transition: 0.2s ease-in-out; 
-    }
-    .badge { font-weight: 600; border-radius: 6px; }
-    .text-indigo { color: #6610f2; }
-    .rounded-pill { border-radius: 50px; }
-</style>
+<link rel="stylesheet" href="{{ asset('css/peminjaman.css') }}">
 @stop
 
+{{-- Hubungkan File JS Eksternal Modul Peminjaman --}}
 @section('js')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
-    $(document).ready(function () {
-        
-        // 1. POPUP MODERN UNTUK AKSI PERSETUJUAN (SETUJUI)
-        $(document).on('submit', '.form-setujui', function(e) {
-            e.preventDefault();
-            var form = this;
-
-            Swal.fire({
-                title: 'Setujui peminjaman ini?',
-                text: "Stok atau status aset akan otomatis terpotong oleh sistem.",
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#28a745',
-                cancelButtonColor: '#6c757d',
-                confirmButtonText: 'Ya, Setujui!',
-                cancelButtonText: 'Batal',
-                allowOutsideClick: false
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    form.submit();
-                }
-            });
-        });
-
-        // 2. POPUP MODERN UNTUK AKSI PENOLAKAN (TOLAK)
-        $(document).on('submit', '.form-tolak', function(e) {
-            e.preventDefault();
-            var form = this;
-
-            Swal.fire({
-                title: 'Tolak peminjaman ini?',
-                text: "Permohonan transaksi ini akan ditandai sebagai ditolak.",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#dc3545',
-                cancelButtonColor: '#6c757d',
-                confirmButtonText: 'Ya, Tolak!',
-                cancelButtonText: 'Batal',
-                allowOutsideClick: false
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    form.submit();
-                }
-            });
-        });
-
-        // 3. POPUP MODERN UNTUK PROSES PENGEMBALIAN ASET (KEMBALIKAN)
-        $(document).on('submit', '.form-kembalikan', function(e) {
-            e.preventDefault();
-            var form = this;
-
-            Swal.fire({
-                title: 'Proses pengembalian aset?',
-                text: "Status barang atau fasilitas akan dikembalikan menjadi 'Tersedia'.",
-                icon: 'info',
-                showCancelButton: true,
-                confirmButtonColor: '#17a2b8',
-                cancelButtonColor: '#6c757d',
-                confirmButtonText: 'Ya, Kembalikan!',
-                cancelButtonText: 'Batal',
-                allowOutsideClick: false
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    form.submit();
-                }
-            });
-        });
-
-        // 4. POPUP MODERN UNTUK HAPUS PERMANEN RIWAYAT (HAPUS)
-        $(document).on('submit', '.form-hapus', function(e) {
-            e.preventDefault();
-            var form = this;
-
-            Swal.fire({
-                title: 'Apakah Anda yakin?',
-                text: "Data histori peminjaman ini akan dihapus secara permanen dari sistem!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Ya, Hapus!',
-                cancelButtonText: 'Batal',
-                allowOutsideClick: false
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    form.submit();
-                }
-            });
-        });
-
-    });
-</script>
+<script src="{{ asset('js/peminjaman.js') }}"></script>
 @stop

@@ -1,0 +1,101 @@
+/* ==========================================================================
+   GAYA KUSTOM UTAMA (BAWAAN ANDA YANG SUDAH DIOPTIMALKAN)
+   ========================================================================== */
+
+.card-ruangan-kustom {
+    border-radius: 15px !important;
+    transition: transform .3s ease, box-shadow .3s ease;
+}
+
+/* Menggabungkan efek scale Anda dengan bayangan shadow halus saat dihover */
+.card-ruangan-kustom:hover { 
+    transform: scale(1.02) translateY(-2px); 
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1) !important;
+}
+
+.profile-username { 
+    font-size: 1.25rem; 
+    color: #343a40; 
+}
+
+.text-secondary { 
+    line-height: 1.2; 
+}
+
+.border-top { 
+    border-top: 1px solid #f4f4f4 !important; 
+}
+
+/* Animasi berkedip pelan pada ikon jam */
+.animate-pulse {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.4; }
+    100% { opacity: 1; }
+}
+
+/* Pembungkus Notifikasi Batas Pengembalian Aset */
+.border-danger-soft {
+    background-color: #fff5f5;
+    border: 1px solid rgba(220, 53, 69, 0.2) !important;
+}
+
+
+/* ==========================================================================
+   TAMBAHAN ELEMEN BARU (KOMPONEN FILTER DROPDOWN & SEARCH BAR)
+   ========================================================================== */
+
+/* Kotak Pilihan Dropdown Jenis Kendaraan */
+.style-select-kustom {
+    border-radius: 10px !important;
+    border: 1px solid #ced4da;
+    font-weight: 600;
+    color: #495057;
+}
+
+/* Kolom Input Bar Pencarian Teks */
+.form-search-kustom {
+    border-radius: 10px 0 0 10px !important;
+    border: 1px solid #ced4da;
+}
+
+.form-search-kustom:focus {
+    border-color: #80bdff;
+    box-shadow: none;
+}
+
+/* Tombol Bersihkan Kata Kunci (Reset) */
+.btn-clear-kustom {
+    border-radius: 10px !important;
+    height: calc(2.25rem + 6px);
+}
+
+/* Hover State untuk Tombol Pinjam Hijau */
+.btn-pinjam-kustom {
+    transition: all 0.2s ease-in-out;
+}
+
+.btn-pinjam-kustom:hover {
+    background-color: #218838 !important;
+    color: white !important;
+}
+
+
+/* ==========================================================================
+   MEDIA QUERIES (OPTIMASI TAMPILAN LAYAR HP / RESPONSIF MOBILE)
+   ========================================================================== */
+
+@media (max-width: 767.98px) {
+    /* Jika layar HP, buat dropdown dan pencarian memenuhi lebar layar secara rapi */
+    .mb-2.mb-md-0 {
+        width: 100% !important;
+        margin-bottom: 0.5rem !important;
+    }
+    
+    .mr-md-2 {
+        margin-right: 0 !important;
+    }
+}

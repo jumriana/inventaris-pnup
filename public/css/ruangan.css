@@ -1,0 +1,120 @@
+/* ==========================================================================
+   GAYA KUSTOM UTAMA (BAWAAN ANDA YANG SUDAH DIOPTIMALKAN)
+   ========================================================================== */
+
+.card-ruangan-kustom {
+    border-radius: 15px !important;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card-ruangan-kustom:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.1) !important;
+}
+
+.badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.bg-light {
+    background-color: #f8f9fa !important;
+}
+
+.btn-pinjam-kustom {
+    transition: all 0.2s ease-in-out;
+}
+
+.btn-pinjam-kustom:hover {
+    background-color: #007bff !important;
+    color: white !important;
+}
+
+/* Animasi Pulse untuk Text Status Waktu Pemakaian */
+.animate-pulse {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.4; }
+    100% { opacity: 1; }
+}
+
+.border-danger-soft {
+    background-color: rgba(220, 53, 69, 0.05);
+    border-color: rgba(220, 53, 69, 0.2) !important;
+}
+
+
+/* ==========================================================================
+   TAMBAHAN ELEMEN BARU (PENCARIAN & FILTER STATUS)
+   ========================================================================== */
+
+/* Gaya untuk Input Kolom Pencarian */
+.form-search-kustom {
+    border-radius: 10px 0 0 10px !important;
+    border: 1px solid #ced4da;
+    height: calc(2.25rem + 6px);
+}
+
+.form-search-kustom:focus {
+    border-color: #80bdff;
+    box-shadow: none;
+}
+
+/* Tombol Reset Pencarian */
+.btn-clear-kustom {
+    border-radius: 10px;
+    height: calc(2.25rem + 6px);
+}
+
+/* Gaya Grup Tombol Filter Status Cepat */
+.btn-filter-kustom {
+    padding: 6px 16px;
+    font-size: 0.85rem !important;
+    font-weight: 600;
+    border-color: #dee2e6 !important;
+    transition: all 0.2s ease-in-out;
+}
+
+/* Lengkungan Sudut Ujung Grup Tombol */
+.btn-group > .btn-filter-kustom:first-child {
+    border-radius: 8px 0 0 8px !important;
+}
+
+.btn-group > .btn-filter-kustom:last-child {
+    border-radius: 0 8px 8px 0 !important;
+}
+
+
+/* ==========================================================================
+   MEDIA QUERIES (RESPONSIF MOBILE / LAYAR HP)
+   ========================================================================== */
+
+@media (max-width: 991.98px) {
+    /* Memberikan jarak antar komponen jika form pencarian dan filter bertumpuk */
+    .btn-group {
+        margin-top: 0.5rem;
+    }
+}
+
+@media (max-width: 576px) {
+    /* Membuat tombol filter melebar penuh secara rapi di layar smartphone */
+    .flex-wrap-mobile {
+        width: 100%;
+    }
+    
+    .btn-filter-kustom {
+        flex: 1 1 auto;
+        text-align: center;
+        margin-bottom: 2px;
+        padding: 6px 10px;
+    }
+    
+    /* Mengubah lengkungan sudut saat tombol menjadi baris terpisah di HP */
+    .btn-group > .btn-filter-kustom:first-child, 
+    .btn-group > .btn-filter-kustom:last-child {
+        border-radius: 6px !important;
+    }
+}

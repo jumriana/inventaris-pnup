@@ -130,8 +130,5 @@
 @stop
 
 @section('css')
-<style>
-    .form-control { border-radius: 8px; border: 1px solid #ddd; }
-    .form-control:focus { box-shadow: none; border-color: #007bff; }
-</style>
+<link rel="stylesheet" href="{{ asset('css/barang.css') }}">
 @stop

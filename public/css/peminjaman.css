@@ -1,0 +1,27 @@
+/* public/css/peminjaman.css */
+
+.table thead th { 
+    border-top: none; 
+    text-transform: uppercase; 
+    font-size: 0.75rem; 
+    color: #6c757d;
+    letter-spacing: 0.5px; 
+}
+
+.table tbody tr:hover { 
+    background-color: rgba(40, 167, 69, 0.03); 
+    transition: 0.2s ease-in-out; 
+}
+
+.badge { 
+    font-weight: 600; 
+    border-radius: 6px; 
+}
+
+.text-indigo { 
+    color: #6610f2; 
+}
+
+.rounded-pill { 
+    border-radius: 50px; 
+}

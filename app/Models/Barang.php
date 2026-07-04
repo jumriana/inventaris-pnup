@@ -19,8 +19,7 @@ class Barang extends Model
         'nama_barang', 
         'kondisi', 
         'jumlah_stok', 
-        'tanggal_regis', 
-        'kategori_id', 
+        'tanggal_regis',  
         'ruangan_id', 
         'created_at', // Tambahkan ini agar bisa diisi manual jika butuh
         'updated_at'  // Tambahkan ini agar bisa diisi manual jika butuh

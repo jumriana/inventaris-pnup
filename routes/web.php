@@ -10,6 +10,7 @@ use App\Http\Controllers\PeminjamanController;
 use App\Http\Controllers\ReportController; 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\PanduanController; // <-- BERHASIL DITAMBAHKAN
 
 /*
 |--------------------------------------------------------------------------
@@ -39,17 +40,20 @@ Route::middleware(['auth'])->group(function () {
     // Fitur Peminjaman (Resource standard untuk semua user)
     Route::resource('peminjaman', PeminjamanController::class);
 
-    // FITUR BARU: Aksi Request Pengembalian yang bisa dilakukan oleh User dari halaman index peminjaman
+    // Fitur Request Pengembalian yang bisa dilakukan oleh User dari halaman index peminjaman
     Route::put('/peminjaman/request-kembali/{id}', [PeminjamanController::class, 'requestPengembalian'])->name('peminjaman.requestKembali');
 
-    // Fitur Informasi Aset (Daftar Ruangan, Kendaraan, dan Inventaris Barang)
+    // Fitur Informasi Aset (Daftar Ruangan, Kendaraan, dan Informasi Barang)
     Route::get('/ruangan', [RuanganController::class, 'index'])->name('ruangan.index');
     Route::get('/kendaraan', [KendaraanController::class, 'index'])->name('kendaraan.index');
     
-    /** * PERBAIKAN: Fungsi index Barang dibuka untuk umum 
+    /** * Fungsi index Barang dibuka untuk umum 
      * User melihat daftar inventaris yang sudah terurut berdasarkan kondisi di Controller
      */
     Route::get('/barang', [BarangController::class, 'index'])->name('barang.index');
+
+    // FITUR BARU: Rute Panduan Penggunaan Sistem (Bisa diakses oleh semua role)
+    Route::get('/panduan', [PanduanController::class, 'index'])->name('panduan.index');
 
 
     // --- KHUSUS ADMIN (Master Data, Approval, & Report) ---

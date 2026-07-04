@@ -1,0 +1,25 @@
+/* public/css/barang.css */
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.1) !important;
+}
+
+.badge { 
+    font-size: 0.75rem; 
+}
+
+.bg-light { 
+    background-color: #f8f9fa !important; 
+}
+
+/* --- Style dari Halaman Edit (Tambahan Baru) --- */
+.form-control { 
+    border-radius: 8px; 
+    border: 1px solid #ddd; 
+}
+
+.form-control:focus { 
+    box-shadow: none; 
+    border-color: #007bff; 
+}

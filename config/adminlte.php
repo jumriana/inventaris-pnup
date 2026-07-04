@@ -325,13 +325,8 @@ return [
             'icon' => 'fas fa-fw fa-car',
         ],
 
-        // --- MENU KHUSUS ADMIN ---
         [
-            'header' => 'MANAJEMEN DATA (ADMIN)',
-            'can'    => 'admin-only', 
-        ],
-        [
-            'text' => 'Inventaris',
+            'text' => 'Informasi Barang',
             'url'  => 'barang',
             'icon' => 'fas fa-fw fa-boxes',
         ],
@@ -351,6 +346,12 @@ return [
             'text' => 'Profile',
             'route'  => 'profile.index', 
             'icon' => 'fas fa-fw fa-user',
+        ],
+
+        [
+        'text' => 'Panduan',
+        'url'  => 'panduan',
+        'icon' => 'fas fa-fw fa-question-circle',
         ],
     ],
 

@@ -85,9 +85,6 @@
                         @enderror
                     </div>
 
-                    {{-- 6. UPLOAD GAMBAR RUANGAN --}}
-        
-
                 </div>
 
                 <div class="card-footer bg-light">
@@ -102,12 +99,7 @@
 </div>
 @stop
 
+{{-- Hubungkan file JS yang sama dengan index --}}
 @section('js')
-<script>
-    // Agar nama file muncul saat dipilih
-    $('.custom-file-input').on('change', function() {
-        let fileName = $(this).val().split('\\').pop();
-        $(this).next('.custom-file-label').addClass("selected").html(fileName);
-    });
-</script>
+<script src="{{ asset('js/ruangan.js') }}"></script>
 @stop
