@@ -349,9 +349,17 @@ return [
         ],
 
         [
-        'text' => 'Panduan',
-        'url'  => 'panduan',
-        'icon' => 'fas fa-fw fa-question-circle',
+            'text' => 'Verifikasi Akun',
+            'url'  => 'admin/verifikasi-akun',
+            'icon' => 'fas fa-user-check',
+            'can'  => 'admin-only'
+        ],
+
+        [
+            'text' => 'Panduan',
+            'url'  => 'panduan',
+            'icon' => 'fas fa-fw fa-question-circle',
+            
         ],
     ],
 

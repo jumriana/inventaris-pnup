@@ -10,7 +10,8 @@ use App\Http\Controllers\PeminjamanController;
 use App\Http\Controllers\ReportController; 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\PanduanController; // <-- BERHASIL DITAMBAHKAN
+use App\Http\Controllers\PanduanController;
+use App\Http\Controllers\ActivationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -23,7 +24,7 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-Auth::routes(['register' => false]); // Sesuai kesepakatan, pendaftaran mandiri dimatikan demi keamanan
+Auth::routes(['register' => false]); // Pendaftaran mandiri dimatikan demi keamanan
 
 // 2. Rute yang HANYA bisa diakses setelah Login
 Route::middleware(['auth'])->group(function () {
@@ -40,31 +41,22 @@ Route::middleware(['auth'])->group(function () {
     // Fitur Peminjaman (Resource standard untuk semua user)
     Route::resource('peminjaman', PeminjamanController::class);
 
-    // Fitur Request Pengembalian yang bisa dilakukan oleh User dari halaman index peminjaman
+    // Fitur Request Pengembalian oleh User
     Route::put('/peminjaman/request-kembali/{id}', [PeminjamanController::class, 'requestPengembalian'])->name('peminjaman.requestKembali');
 
     // Fitur Informasi Aset (Daftar Ruangan, Kendaraan, dan Informasi Barang)
     Route::get('/ruangan', [RuanganController::class, 'index'])->name('ruangan.index');
     Route::get('/kendaraan', [KendaraanController::class, 'index'])->name('kendaraan.index');
-    
-    /** * Fungsi index Barang dibuka untuk umum 
-     * User melihat daftar inventaris yang sudah terurut berdasarkan kondisi di Controller
-     */
     Route::get('/barang', [BarangController::class, 'index'])->name('barang.index');
 
-    // FITUR BARU: Rute Panduan Penggunaan Sistem (Bisa diakses oleh semua role)
+    // Fitur Panduan Penggunaan Sistem (Bisa diakses oleh semua role)
     Route::get('/panduan', [PanduanController::class, 'index'])->name('panduan.index');
 
-
-    // --- KHUSUS ADMIN (Master Data, Approval, & Report) ---
-    Route::middleware(['role:admin'])->group(function () {
+    // --- KHUSUS ADMIN (Master Data, Approval, Report, & Verifikasi User) ---
+    Route::middleware(['role:admin'])->prefix('admin')->group(function () {
         
-        /** * Resource Barang untuk Admin 
-         * Mengelola tambah, edit, dan hapus inventaris.
-         */
+        // Resource Barang, Ruangan, & Kendaraan untuk Admin (Aksi CRUD selain index)
         Route::resource('barang', BarangController::class)->except(['index']);
-
-        // Resource Ruangan & Kendaraan (Hanya untuk aksi CRUD selain index)
         Route::resource('ruangan', RuanganController::class)->except(['index']);
         Route::resource('kendaraan', KendaraanController::class)->except(['index']);
 
@@ -76,13 +68,22 @@ Route::middleware(['auth'])->group(function () {
         // Fitur Report
         Route::get('/report', [ReportController::class, 'index'])->name('report.index');
         Route::get('/report/pdf', [ReportController::class, 'exportPDF'])->name('report.pdf');
+
+        // FITUR VERIFIKASI AKUN SISI ADMIN
+        Route::get('/verifikasi-akun', [ActivationController::class, 'adminIndex'])->name('admin.verifikasi.index');
+        Route::post('/verifikasi-akun/{id}/setujui', [ActivationController::class, 'approveActivation'])->name('admin.verifikasi.approve');
+        Route::post('/verifikasi-akun/{id}/tolak', [ActivationController::class, 'rejectActivation'])->name('admin.verifikasi.tolak');
     });
 });
 
-// 3. REDIRECT & COMPATIBILITY
+// 3. FITUR AKTIVASI AKUN & NOTIFIKASI WHATSAPP CIVITAS (DI LUAR MIDDLEWARE AUTH)
+Route::get('/activation', [ActivationController::class, 'showForm'])->name('activation.form');
+Route::post('/activation', [ActivationController::class, 'requestActivation'])->name('activation.request');
+
+// 4. REDIRECT & COMPATIBILITY
 Route::redirect('/home', '/dashboard');
 
-// 4. RUTE PEMBUAT KODE ENKRIPSI PASSWORD MANUAL (DARURAT)
+// 5. RUTE PEMBUAT KODE ENKRIPSI PASSWORD MANUAL (DARURAT)
 Route::get('/cek-password', function () {
     return Hash::make('Pnup123');
 });

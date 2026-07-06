@@ -13,8 +13,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         // 1. Tambahkan Alias Middleware agar 'role' bisa dibaca di routes/web.php
         $middleware->alias([
-            'role' => \App\Http\Middleware\CheckRole::class,
-        ]);
+        'role' => \App\CheckRole::class,
+    ]);
 
         // 2. Mengarahkan user setelah login
         $middleware->redirectTo(

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\Request; // Tambahkan ini untuk fungsi logout
 use Illuminate\Validation\ValidationException; // Ditambahkan untuk handle error custom
+use Illuminate\Support\Facades\Auth; // Ditambahkan untuk fungsi Auth::logout()
 
 class LoginController extends Controller
 {
@@ -52,6 +53,26 @@ class LoginController extends Controller
     }
 
     /**
+     * PENGAMAN STATUS LOGIN: Mencegah user berstatus 'nonaktif' atau 'pending' 
+     * tembus masuk ke dashboard meskipun password yang diinput sudah benar.
+     */
+    protected function authenticated(Request $request, $user)
+    {
+        if ($user->status !== 'aktif') {
+            // Paksa logout sesi yang baru saja dibuat agar tidak tersangkut
+            Auth::logout();
+
+            // Lemparkan error spesifik ke kolom identity_number/password agar muncul di view login
+            throw ValidationException::withMessages([
+                'identity_number' => ['Akun Anda belum aktif atau sedang dinonaktifkan. Silakan ajukan aktivasi akun untuk mendapatkan password bawaan.'],
+            ]);
+        }
+
+        // Jika statusnya 'aktif', izinkan lanjut masuk ke halaman dashboard utama
+        return redirect()->intended($this->redirectPath());
+    }
+
+    /**
      * Tambahkan fungsi ini agar setelah Logout 
      * langsung diarahkan kembali ke halaman Login.
      */
@@ -62,7 +83,7 @@ class LoginController extends Controller
 
     /**
      * FITUR BARU: Mengubah kalimat pesan error dan memindahkan 
-     * posisinya agar mengunci di bawah kolom password.
+     * posisinya agar mengunci di bawah kolom password jika kredensial salah.
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Symfony\Component\HttpFoundation\Response

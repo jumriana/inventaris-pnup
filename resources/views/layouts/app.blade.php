@@ -37,6 +37,8 @@
                             <li class="nav-item">
                                 <a class="nav-link {{ Request::is('peminjaman*') ? 'active fw-bold' : '' }}" href="{{ route('peminjaman.index') }}">Peminjaman</a>
                             </li>
+                            
+                            {{-- MENU KHUSUS ADMIN --}}
                             @if(Auth::user()->role == 'admin')
                                 <li class="nav-item dropdown">
                                     <a class="nav-link dropdown-toggle" href="#" id="masterData" role="button" data-bs-toggle="dropdown">Master Data</a>
@@ -48,6 +50,12 @@
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link {{ Request::is('report*') ? 'active fw-bold' : '' }}" href="{{ route('report.index') }}">Laporan</a>
+                                </li>
+                                {{-- PERBAIKAN STRUKTUR SIDEBAR: Menu diletakkan sejajar di bawah Laporan/Report --}}
+                                <li class="nav-item">
+                                    <a class="nav-link {{ Request::is('verifikasi-akun*') ? 'active fw-bold' : '' }}" href="{{ route('admin.verifikasi.index') }}">
+                                        <i class="fas fa-user-check me-1"></i> Verifikasi Akun
+                                    </a>
                                 </li>
                             @endif
                         @endauth

@@ -23,13 +23,15 @@ class WhatsappService
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
             CURLOPT_CUSTOMREQUEST => 'POST',
-            CURLOPT_POSTFIELDS => array(
+            // PERBAIKAN: Menggunakan http_build_query agar data terkirim sebagai application/x-www-form-urlencoded yang kompatibel dengan Fonnte
+            CURLOPT_POSTFIELDS => http_build_query(array(
                 'target' => $target,
                 'message' => $message,
-                'countryCode' => '62', // Memastikan nomor lokal Indonesia otomatis terformat dengan benar
-            ),
+                'countryCode' => '62', 
+            )),
             CURLOPT_HTTPHEADER => array(
-                "Authorization: $token"
+                "Authorization: $token",
+                "Content-Type: application/x-www-form-urlencoded" // Menegaskan format data ke server
             ),
         ));
 
