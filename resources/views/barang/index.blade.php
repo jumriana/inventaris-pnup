@@ -62,7 +62,7 @@
                 <div class="mt-3 border-top pt-3">
                     @if(Auth::user()->role == 'admin')
                         {{-- TAMPILAN ADMIN --}}
-                        <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
                             <form action="{{ route('barang.destroy', $b->id) }}" method="POST" class="form-hapus">
                                 @csrf 
                                 @method('DELETE')
@@ -73,6 +73,23 @@
                                 <i class="fas fa-edit mr-1"></i> Edit Data
                             </a>
                         </div>
+
+                        {{-- FITUR TAMBAHAN: Tombol Pinjam Barang untuk Sisi Admin --}}
+                        @if($b->kondisi == 'Rusak')
+                            <button class="btn btn-secondary btn-block rounded-pill disabled" disabled>
+                                <i class="fas fa-exclamation-triangle mr-1"></i> Rusak (Tidak Bisa Pinjam)
+                            </button>
+                        @elseif($b->jumlah_stok > 0)
+                            <a href="{{ route('peminjaman.create', ['item_id' => $b->id, 'kategori' => 'barang']) }}" 
+                               class="btn btn-success btn-block rounded-pill shadow-sm py-2">
+                                <i class="fas fa-hand-holding mr-1"></i> Pinjam Barang
+                            </a>
+                        @else
+                            <button class="btn btn-secondary btn-block rounded-pill disabled" disabled>
+                                <i class="fas fa-ban mr-1"></i> Stok Habis
+                            </button>
+                        @endif
+
                     @else
                         {{-- TAMPILAN USER --}}
                         @if($b->kondisi == 'Rusak')

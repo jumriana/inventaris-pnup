@@ -77,10 +77,13 @@ class PeminjamanController extends Controller
         $userIdTersimpan = Auth::user()->identity_number ?? Auth::id();
         $tgl_pnm = $request->tgl_pinjam;
         $tgl_kmb = $request->tgl_kembali;
+        
+        // Menentukan status awal: Jika admin yang meminjam, langsung 'disetujui', jika user biasa maka 'pending'
+        $statusAwal = (Auth::user()->role == 'admin') ? 'disetujui' : 'pending';
 
         try {
             // 3. JALANKAN DATABASE TRANSACTION UNTUK MENGHINDARI RACE CONDITION
-            DB::transaction(function () use ($request, $userIdTersimpan, $pathSuratIzin, $tgl_pnm, $tgl_kmb) {
+            DB::transaction(function () use ($request, $userIdTersimpan, $pathSuratIzin, $tgl_pnm, $tgl_kmb, $statusAwal) {
                 
                 if ($request->kategori === 'barang') {
                     if ($request->has('barang_id')) {
@@ -94,6 +97,11 @@ class PeminjamanController extends Controller
                                     throw new \Exception("Stok untuk barang " . ($barang->nama_barang ?? '') . " tidak mencukupi.");
                                 }
 
+                                // JIKA ADMIN: Langsung potong stok barang saat data dibuat
+                                if (Auth::user()->role == 'admin') {
+                                    $barang->decrement('jumlah_stok', $qty_req);
+                                }
+
                                 Peminjaman::create([
                                     'user_id'     => $userIdTersimpan,
                                     'barang_id'   => $id,
@@ -103,7 +111,7 @@ class PeminjamanController extends Controller
                                     'keperluan'   => $request->keperluan,
                                     'nomor_wa'    => $request->nomor_wa,
                                     'surat_izin'  => $pathSuratIzin,
-                                    'status'      => 'pending'
+                                    'status'      => $statusAwal
                                 ]);
                             }
                         }
@@ -130,6 +138,11 @@ class PeminjamanController extends Controller
                         throw new \Exception("Maaf, kendaraan tersebut sudah dipesan oleh pengguna lain pada tanggal pilihan Anda.");
                     }
 
+                    // JIKA ADMIN: Langsung update status kendaraan jadi Dipinjam
+                    if (Auth::user()->role == 'admin') {
+                        Kendaraan::where('id', $request->kendaraan_id)->update(['status' => 'Dipinjam']);
+                    }
+
                     Peminjaman::create([
                         'user_id'      => $userIdTersimpan,
                         'kendaraan_id' => $request->kendaraan_id,
@@ -139,7 +152,7 @@ class PeminjamanController extends Controller
                         'keperluan'    => $request->keperluan,
                         'nomor_wa'     => $request->nomor_wa,
                         'surat_izin'   => $pathSuratIzin,
-                        'status'       => 'pending'
+                        'status'       => $statusAwal
                     ]);
                 } 
                 
@@ -163,6 +176,11 @@ class PeminjamanController extends Controller
                         throw new \Exception("Maaf, ruangan/aula tersebut sudah dipesan pada rentang tanggal pilihan Anda.");
                     }
 
+                    // JIKA ADMIN: Langsung update status ruangan jadi Dipakai
+                    if (Auth::user()->role == 'admin') {
+                        Ruangan::where('id', $request->ruangan_id)->update(['status' => 'Dipakai']);
+                    }
+
                     Peminjaman::create([
                         'user_id'     => $userIdTersimpan,
                         'ruangan_id'  => $request->ruangan_id,
@@ -172,15 +190,18 @@ class PeminjamanController extends Controller
                         'keperluan'   => $request->keperluan,
                         'nomor_wa'    => $request->nomor_wa,
                         'surat_izin'  => $pathSuratIzin,
-                        'status'      => 'pending'
+                        'status'      => $statusAwal
                     ]);
                 }
             });
 
-            return redirect()->route('peminjaman.index')->with('success', 'Permohonan peminjaman berhasil diajukan! Menunggu validasi berkas oleh Admin.');
+            $pesanSukses = (Auth::user()->role == 'admin') 
+                ? 'Peminjaman Admin berhasil dilakukan dan aset langsung dikunci!' 
+                : 'Permohonan peminjaman berhasil diajukan! Menunggu validasi berkas oleh Admin.';
+
+            return redirect()->route('peminjaman.index')->with('success', $pesanSukses);
 
         } catch (\Exception $e) {
-            // Semua query otomatis dibatalkan jika melempar exception di sini (Rollback)
             return redirect()->back()->with('error', $e->getMessage())->withInput();
         }
     }
