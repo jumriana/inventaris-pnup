@@ -48,7 +48,7 @@
                     </div>
 
                     <div class="row">
-                        {{-- 3. NAMA BARANG (Tambahan Baru) --}}
+                        {{-- 3. NAMA BARANG --}}
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="nama_barang">Nama Barang</label>
@@ -67,7 +67,7 @@
 
                     <div class="row">
                         {{-- 5. KONDISI --}}
-                        <div class="col-md-12">
+                        <div class="col-md-6">
                             <div class="form-group">
                                 <label for="kondisi">Kondisi Barang</label>
                                 <select name="kondisi" class="form-control" id="kondisi" required>
@@ -75,6 +75,24 @@
                                     <option value="Rusak Ringan" {{ old('kondisi') == 'Rusak Ringan' ? 'selected' : '' }}>Rusak Ringan</option>
                                     <option value="Rusak" {{ old('kondisi') == 'Rusak' ? 'selected' : '' }}>Rusak</option>
                                 </select>
+                            </div>
+                        </div>
+
+                        {{-- UPDATE BARU: KATEGORI BARANG --}}
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="kategori">Kategori Barang</label>
+                                <select name="kategori" class="form-control @error('kategori') is-invalid @enderror" id="kategori" required>
+                                    <option value="">-- Pilih Kategori Barang --</option>
+                                    <option value="pertukangan" {{ old('kategori') == 'pertukangan' ? 'selected' : '' }}>Alat Pertukangan & Perbaikan</option>
+                                    <option value="elektronik" {{ old('kategori') == 'elektronik' ? 'selected' : '' }}>Elektronik & Multimedia</option>
+                                    <option value="fasilitas" {{ old('kategori') == 'fasilitas' ? 'selected' : '' }}>Fasilitas Kelas & Kantor</option>
+                                    <option value="kebersihan" {{ old('kategori') == 'kebersihan' ? 'selected' : '' }}>Alat Kebersihan & Perawatan</option>
+                                    <option value="komunikasi" {{ old('kategori') == 'komunikasi' ? 'selected' : '' }}>Perangkat Komunikasi</option>
+                                </select>
+                                @error('kategori')
+                                    <span class="invalid-feedback" role="alert"><strong>{{ $message }}</strong></span>
+                                @enderror
                             </div>
                         </div>
                     </div>

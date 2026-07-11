@@ -3,15 +3,59 @@
 @section('title', 'Inventaris Barang')
 
 @section('content_header')
-<div class="d-flex justify-content-between align-items-center">
-    <h1 class="font-weight-bold text-dark"><i class="fas fa-boxes mr-2 text-primary"></i> Inventaris Barang PNUP</h1>
+<div class="row align-items-center mb-3">
+    {{-- Sisi Kiri: Hanya Judul Utama --}}
+    <div class="col-md-6 col-sm-12 mb-2 mb-md-0">
+        <h1 class="font-weight-bold text-dark mb-0">
+            <i class="fas fa-boxes mr-2 text-primary"></i> Inventaris Barang PNUP
+        </h1>
+    </div>
     
-    {{-- Tombol Tambah hanya muncul jika yang login adalah Admin --}}
-    @if(Auth::user()->role == 'admin')
-        <a href="{{ route('barang.create') }}" class="btn btn-primary shadow-sm">
-            <i class="fas fa-plus-circle mr-1"></i> Tambah Barang Baru
-        </a>
-    @endif
+    {{-- Sisi Kanan Atas: Tombol Tambah Barang Baru (Sejajar ke Kanan) --}}
+    <div class="col-md-6 col-sm-12 text-md-right text-left">
+        @if(Auth::user()->role == 'admin')
+            <a href="{{ route('barang.create') }}" class="btn btn-primary shadow-sm px-3" style="border-radius: 8px;">
+                <i class="fas fa-plus-circle mr-1"></i> Tambah Barang Baru
+            </a>
+        @endif
+    </div>
+</div>
+
+{{-- Baris Baru di Bawahnya: Khusus untuk Filter, Pencarian, dan Reset --}}
+<div class="d-flex justify-content-end align-items-center flex-wrap">
+    <form action="{{ route('barang.index') }}" method="GET" class="d-flex align-items-center flex-wrap">
+        {{-- Filter Dropdown Kategori --}}
+        <div class="mr-2 mb-2 mb-md-0">
+            <select name="kategori" class="form-control shadow-sm" style="border-radius: 8px;" onchange="this.form.submit()">
+                <option value="">📦 Semua Kategori</option>
+                <option value="pertukangan" {{ request('kategori') == 'pertukangan' ? 'selected' : '' }}>Alat Pertukangan & Perbaikan</option>
+                <option value="elektronik" {{ request('kategori') == 'elektronik' ? 'selected' : '' }}>Elektronik & Multimedia</option>
+                <option value="fasilitas" {{ request('kategori') == 'fasilitas' ? 'selected' : '' }}>Fasilitas Kelas & Kantor</option>
+                <option value="kebersihan" {{ request('kategori') == 'kebersihan' ? 'selected' : '' }}>Alat Kebersihan & Perawatan</option>
+                <option value="komunikasi" {{ request('kategori') == 'komunikasi' ? 'selected' : '' }}>Perangkat Komunikasi</option>
+            </select>
+        </div>
+
+        {{-- Input Pencarian Cepat --}}
+        <div class="input-group shadow-sm mr-2 mb-2 mb-md-0" style="width: 250px;">
+            <input type="text" name="search" class="form-control" placeholder="Cari merek atau nama..." 
+                   value="{{ request('search') }}" style="border-top-left-radius: 8px; border-bottom-left-radius: 8px;">
+            <div class="input-group-append">
+                <button type="submit" class="btn btn-primary" style="border-top-right-radius: 8px; border-bottom-right-radius: 8px;">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+
+        {{-- Tombol Reset Dinamis --}}
+        @if(request()->filled('kategori') || request()->filled('search'))
+            <div class="mb-2 mb-md-0">
+                <a href="{{ route('barang.index') }}" class="btn btn-secondary shadow-sm" style="border-radius: 8px;">
+                    Reset
+                </a>
+            </div>
+        @endif
+    </form>
 </div>
 @stop
 

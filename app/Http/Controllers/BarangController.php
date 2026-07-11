@@ -18,12 +18,31 @@ class BarangController extends Controller
 
     /**
      * 1. Menampilkan daftar inventaris barang diurutkan berdasarkan Abjad A-Z.
+     * Ditambahkan fitur pencarian cepat dan penyaringan kategori aset.
      * Terbuka untuk seluruh pengguna yang telah terautentikasi.
      */
-    public function index()
+    public function index(Request $request)
     {
-        // PERBAIKAN: Mengurutkan data inventaris barang berdasarkan nama_barang (A ke Z)
-        $barangs = Barang::orderBy('nama_barang', 'asc')->get();
+        $query = Barang::query();
+
+        // FITUR TAMBAHAN: Logika Penyaringan Berdasarkan Pilihan Kategori Dropdown
+        if ($request->filled('kategori')) {
+            // Catatan: Pastikan kolom 'kategori' tersedia pada tabel barang di database Anda
+            $query->where('kategori', $request->kategori);
+        }
+
+        // FITUR TAMBAHAN: Logika Pencarian Cepat Berdasarkan Nama atau Kode Inventaris
+        if ($request->filled('search')) {
+            $searchTerm = $request->search;
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('nama_barang', 'LIKE', '%' . $searchTerm . '%')
+                  ->orWhere('kode_inventaris', 'LIKE', '%' . $searchTerm . '%');
+            });
+        }
+
+        // Mengurutkan data inventaris barang berdasarkan nama_barang (A ke Z)
+        $barangs = $query->orderBy('nama_barang', 'asc')->get();
+        
         return view('barang.index', compact('barangs'));
     }
 
@@ -70,6 +89,11 @@ class BarangController extends Controller
         // Menggabungkan Merk dan Keterangan Tambahan ke dalam kolom ruangan_id agar semua info aman tersimpan
         $barang->ruangan_id      = 'Merk: ' . $request->merk . ' | ' . ($request->keterangan ?? 'Tanpa Keterangan');
         
+        // Menyimpan kategori barang jika form input tambah barang juga menyediakan field kategori
+        if ($request->has('kategori')) {
+            $barang->kategori    = $request->kategori;
+        }
+
         $barang->status          = 'Tersedia';            // Set status default bawaan sistem Anda
         $barang->tanggal_regis   = now()->format('Y-m-d');
         
@@ -120,6 +144,10 @@ class BarangController extends Controller
         $barang->kondisi         = $request->kondisi;
         $barang->jumlah_stok     = $request->nup;
         $barang->ruangan_id      = 'Merk: ' . $request->merk . ' | ' . ($request->keterangan ?? 'Tanpa Keterangan');
+        
+        if ($request->has('kategori')) {
+            $barang->kategori    = $request->kategori;
+        }
         
         $barang->save();
 

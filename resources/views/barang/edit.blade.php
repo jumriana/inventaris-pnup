@@ -44,7 +44,7 @@
                     </div>
 
                     <div class="row">
-                        {{-- 3. NAMA BARANG (Tambahan Baru) --}}
+                        {{-- 3. NAMA BARANG --}}
                         <div class="col-md-6 form-group">
                             <label for="nama_barang">Nama Barang</label>
                             <input type="text" name="nama_barang" id="nama_barang" 
@@ -57,7 +57,6 @@
 
                         {{-- 4. MERK (Memisahkan Teks Merk dari ruangan_id) --}}
                         <div class="col-md-6 form-group">
-                            <label for="merk">Merk</label>
                             @php
                                 $merkValue = '';
                                 // Jika formatnya "Merk: BOSCH | Keterangan..."
@@ -69,6 +68,7 @@
                                     $merkValue = $barang->nama_barang; 
                                 }
                             @endphp
+                            <label for="merk">Merk</label>
                             <input type="text" name="merk" id="merk" 
                                    class="form-control @error('merk') is-invalid @enderror" 
                                    value="{{ old('merk', $merkValue) }}" required>
@@ -80,7 +80,7 @@
 
                     <div class="row">
                         {{-- 5. KONDISI BARANG --}}
-                        <div class="col-md-12 form-group">
+                        <div class="col-md-6 form-group">
                             <label for="kondisi">Kondisi Barang</label>
                             <select name="kondisi" id="kondisi" class="form-control @error('kondisi') is-invalid @enderror" required>
                                 <option value="Baik" {{ old('kondisi', $barang->kondisi) == 'Baik' ? 'selected' : '' }}>Baik</option>
@@ -89,6 +89,22 @@
                             </select>
                             @error('kondisi')
                                 <span class="invalid-feedback">{{ $message }}</span>
+                            @enderror
+                        </div>
+
+                        {{-- UPDATE BARU: EDIT KATEGORI BARANG --}}
+                        <div class="col-md-6 form-group">
+                            <label for="kategori">Kategori Barang</label>
+                            <select name="kategori" id="kategori" class="form-control @error('kategori') is-invalid @enderror" required>
+                                <option value="">-- Pilih Kategori Barang --</option>
+                                <option value="pertukangan" {{ old('kategori', $barang->kategori) == 'pertukangan' ? 'selected' : '' }}>Alat Pertukangan & Perbaikan</option>
+                                <option value="elektronik" {{ old('kategori', $barang->kategori) == 'elektronik' ? 'selected' : '' }}>Elektronik & Multimedia</option>
+                                <option value="fasilitas" {{ old('kategori', $barang->kategori) == 'fasilitas' ? 'selected' : '' }}>Fasilitas Kelas & Kantor</option>
+                                <option value="kebersihan" {{ old('kategori', $barang->kategori) == 'kebersihan' ? 'selected' : '' }}>Alat Kebersihan & Perawatan</option>
+                                <option value="komunikasi" {{ old('kategori', $barang->kategori) == 'komunikasi' ? 'selected' : '' }}>Perangkat Komunikasi</option>
+                            </select>
+                            @error('kategori')
+                                <span class="invalid-feedback" role="alert"><strong>{{ $message }}</strong></span>
                             @enderror
                         </div>
                     </div>
