@@ -137,17 +137,18 @@
                     <tbody>
                         <tr>
                             <td>
-                                <select name="barang_id[]" class="form-control">
+                                <select name="barang_id[]" class="form-control select-barang">
                                     <option value="">-- Pilih Barang --</option>
                                     @foreach($barangs as $b)
                                         <option value="{{ $b->id }}" 
+                                            data-stok="{{ $b->jumlah_stok }}"
                                             {{ ($kategori_pilihan == 'barang' && $selected_item_id == $b->id) ? 'selected' : '' }}>
                                             {{ $b->nama_barang }} (Stok: {{ $b->jumlah_stok }})
                                         </option>
                                     @endforeach
                                 </select>
                             </td>
-                            <td><input type="number" name="jumlah[]" class="form-control" value="1" min="1"></td>
+                            <td><input type="number" name="jumlah[]" class="form-control input-jumlah" value="1" min="1"></td>
                             <td><button type="button" class="btn btn-danger btn-sm remove-row"><i class="fas fa-trash"></i></button></td>
                         </tr>
                     </tbody>
@@ -166,27 +167,71 @@
 
 {{-- Hubungkan File Aset Eksternal Modul Peminjaman --}}
 @section('css')
-<link rel="stylesheet" href="{{ asset('css/peminjaman.css') }}">
+<link class="stylesheet" href="{{ asset('css/peminjaman.css') }}">
 @stop
 
 @section('js')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="{{ asset('js/peminjaman.js') }}"></script>
 <script>
-    // Penambahan Baris Menggunakan Perulangan Server Blade tetap ditaruh inline
-    $('#addRow').click(function() {
-        var newRow = `<tr>
-            <td>
-                <select name="barang_id[]" class="form-control">
-                    <option value="">-- Pilih Barang --</option>
-                    @foreach($barangs as $b)
-                        <option value="{{ $b->id }}">{{ $b->nama_barang }}</option>
-                    @endforeach
-                </select>
-            </td>
-            <td><input type="number" name="jumlah[]" class="form-control" value="1" min="1"></td>
-            <td><button type="button" class="btn btn-danger btn-sm remove-row"><i class="fas fa-trash"></i></button></td>
-        </tr>`;
-        $('#tableBarang tbody').append(newRow);
+    $(document).ready(function() {
+        // 1. Logika tombol Tambah Baris Dinamis (Tetap memunculkan teks Stok & atribut data-stok)
+        $('#addRow').click(function() {
+            var newRow = `<tr>
+                <td>
+                    <select name="barang_id[]" class="form-control select-barang">
+                        <option value="">-- Pilih Barang --</option>
+                        @foreach($barangs as $b)
+                            <option value="{{ $b->id }}" data-stok="{{ $b->jumlah_stok }}">{{ $b->nama_barang }} (Stok: {{ $b->jumlah_stok }})</option>
+                        @endforeach
+                    </select>
+                </td>
+                <td><input type="number" name="jumlah[]" class="form-control input-jumlah" value="1" min="1"></td>
+                <td><button type="button" class="btn btn-danger btn-sm remove-row"><i class="fas fa-trash"></i></button></td>
+            </tr>`;
+            $('#tableBarang tbody').append(newRow);
+        });
+
+        // Hapus baris dinamis
+        $(document).on('click', '.remove-row', function() {
+            $(this).closest('tr').remove();
+        });
+
+        // 2. Mengubah nilai max atribut secara dinamis saat dropdown barang dipilih
+        $(document).on('change', '.select-barang', function() {
+            var stok = $(this).find(':selected').data('stok');
+            var inputJumlah = $(this).closest('tr').find('.input-jumlah');
+            
+            if (stok !== undefined && stok !== '') {
+                inputJumlah.attr('max', stok);
+                
+                // Jika nilai input saat ini melampaui stok baru yang dipilih, set ke nilai maksimum
+                if (parseInt(inputJumlah.val()) > parseInt(stok)) {
+                    inputJumlah.val(stok);
+                }
+            } else {
+                inputJumlah.removeAttr('max');
+            }
+        });
+
+        // 3. Validasi saat user mengetik atau mengubah isi input jumlah secara manual
+        $(document).on('input change', '.input-jumlah', function() {
+            var maxStok = $(this).attr('max');
+            var valueInput = $(this).val();
+
+            if (maxStok && parseInt(valueInput) > parseInt(maxStok)) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Stok Tidak Mencukupi',
+                    text: 'Anda tidak dapat meminjam melebihi sisa stok yang tersedia (' + maxStok + ' Unit).',
+                    confirmButtonColor: '#3085d6'
+                });
+                $(this).val(maxStok); // Kembalikan nilai ke batas maksimal stok
+            }
+        });
+
+        // Trigger perubahan awal untuk mengaktifkan max jika barang sudah ter-select saat halaman dimuat
+        $('.select-barang').trigger('change');
     });
 </script>
 @stop
