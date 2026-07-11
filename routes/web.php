@@ -52,7 +52,16 @@ Route::middleware(['auth'])->group(function () {
     // Fitur Panduan Penggunaan Sistem (Bisa diakses oleh semua role)
     Route::get('/panduan', [PanduanController::class, 'index'])->name('panduan.index');
 
-    // --- KHUSUS ADMIN (Master Data, Approval, Report, & Verifikasi User) ---
+
+    // --- HANYA BISA DIAKSES ADMIN (Di luar prefix agar URL tetap bersih /report) ---
+    Route::middleware(['role:admin'])->group(function () {
+        // Fitur Laporan Global (Akses URL: /report)
+        Route::get('/report', [ReportController::class, 'index'])->name('report.index');
+        Route::get('/report/pdf', [ReportController::class, 'exportPDF'])->name('report.pdf');
+    });
+
+
+    // --- KHUSUS ADMIN MENGGUNAKAN PREFIX /ADMIN (Master Data, Approval, & Verifikasi User) ---
     Route::middleware(['role:admin'])->prefix('admin')->group(function () {
         
         // Resource Barang, Ruangan, & Kendaraan untuk Admin (Aksi CRUD selain index)
@@ -64,10 +73,6 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/peminjaman/setujui/{id}', [PeminjamanController::class, 'setujui'])->name('peminjaman.setujui');
         Route::put('/peminjaman/tolak/{id}', [PeminjamanController::class, 'tolak'])->name('peminjaman.tolak');
         Route::put('/peminjaman/kembalikan/{id}', [PeminjamanController::class, 'kembalikan'])->name('peminjaman.kembalikan');
-
-        // Fitur Report
-        Route::get('/report', [ReportController::class, 'index'])->name('report.index');
-        Route::get('/report/pdf', [ReportController::class, 'exportPDF'])->name('report.pdf');
 
         // FITUR VERIFIKASI AKUN SISI ADMIN
         Route::get('/verifikasi-akun', [ActivationController::class, 'adminIndex'])->name('admin.verifikasi.index');
