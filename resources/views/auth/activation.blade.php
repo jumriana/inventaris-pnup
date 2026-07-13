@@ -27,7 +27,7 @@
                     <div class="text-center mb-4">
                         <img src="{{ asset('img/logo-pnup.png') }}" alt="Logo PNUP" style="height: 80px; width: auto;">
                         <h4 class="mt-3 font-weight-bold">Ajukan Akses Akun</h4>
-                        <p class="text-muted small">Masukkan nomor identitas civitas dan WhatsApp untuk mendapatkan password bawaan.</p>
+                        <p class="text-muted small">Masukkan nomor identitas civitas, email, dan WhatsApp untuk mendapatkan password bawaan.</p>
                     </div>
 
                     <form method="POST" action="{{ route('activation.request') }}" autocomplete="off">
@@ -47,6 +47,24 @@
                                        style="border-radius: 0 12px 12px 0 !important; border-left: none !important;">
                             </div>
                             @error('identity_number')
+                                <span class="text-danger d-block mt-1 small">{{ $message }}</span>
+                            @enderror
+                        </div>
+
+                        {{-- UPDATE BARU: KOLOM INPUT EMAIL CIVITAS --}}
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Email Aktif</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0" style="border-radius: 12px 0 0 12px; border: 1px solid #e9ecef;">
+                                    <i class="fas fa-envelope text-muted"></i>
+                                </span>
+                                <input type="email" name="email" 
+                                       class="form-control @error('email') is-invalid @enderror" 
+                                       value="{{ old('email') }}" required
+                                       placeholder="Contoh: nama@gmail.com"
+                                       style="border-radius: 0 12px 12px 0 !important; border-left: none !important;">
+                            </div>
+                            @error('email')
                                 <span class="text-danger d-block mt-1 small">{{ $message }}</span>
                             @enderror
                         </div>
@@ -79,16 +97,14 @@
                             </button>
                         </div>
 
-                        {{-- PERBAIKAN TOTAL: Tombol Kembali yang membersihkan sesi/login tersangkut --}}
+                        {{-- Tombol Kembali yang membersihkan sesi/login tersangkut --}}
                         <div class="text-center mt-3">
                             @auth
-                                {{-- Jika ada user yang tersangkut login, paksa logout lewat form --}}
                                 <a href="{{ route('logout') }}" class="text-decoration-none text-muted small fw-bold"
                                    onclick="event.preventDefault(); document.getElementById('bypass-logout-form').submit();">
                                     <i class="fas fa-arrow-left me-1"></i> Keluar & Kembali ke Login
                                 </a>
                             @else
-                                {{-- Jika memang tidak ada sesi login, arahkan ke login biasa --}}
                                 <a href="{{ route('login') }}" class="text-decoration-none text-muted small">
                                     <i class="fas fa-arrow-left me-1"></i> Kembali ke Halaman Login
                                 </a>

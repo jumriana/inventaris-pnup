@@ -19,13 +19,14 @@ class ActivationController extends Controller
     }
 
     /**
-     * SISI CIVITAS: Memproses Pengajuan Aktivasi Nomor WhatsApp Civitas
+     * SISI CIVITAS: Memproses Pengajuan Aktivasi Nomor WhatsApp Civitas & Email
      */
     public function requestActivation(Request $request)
     {
         $request->validate([
             'identity_number' => 'required|string', 
-            'no_hp'           => 'required|numeric'  
+            'email'           => 'required|email|max:255',
+            'no_hp'           => 'required|string|min:10|max:15'  
         ]);
 
         $user = User::where('identity_number', $request->identity_number)->first();
@@ -43,7 +44,7 @@ class ActivationController extends Controller
             $nomorHp = '62' . substr($nomorHp, 1);
         }
 
-        // Menggunakan penugasan langsung dan save() agar lolos dari proteksi $fillable Laravel
+        $user->email = $request->email; 
         $user->no_hp = $nomorHp;
         $user->status = 'pending';
         $user->save();
@@ -61,7 +62,7 @@ class ActivationController extends Controller
     }
 
     /**
-     * SISI ADMIN: Menyetujui akun, mengacak password, dan mengirimkan pesan WA via WhatsappService
+     * SISI ADMIN: Menyetujui akun dan menetapkan password bawaan Pnup123
      */
     public function approveActivation($id)
     {
@@ -71,15 +72,15 @@ class ActivationController extends Controller
             return redirect()->back()->with('error', 'Akun tidak dalam antrean aktivasi.');
         }
 
-        // 1. Acak 8 karakter password bawaan sistem
-        $passwordBawaan = Str::random(8);
+        // UPDATE BARU: Password diubah menjadi statis 'Pnup123' untuk semua user
+        $passwordBawaan = "Pnup123";
 
-        // 2. Ubah status akun menjadi aktif dan simpan enkripsi password barunya
+        // Ubah status akun menjadi aktif dan simpan enkripsi password barunya
         $user->password = Hash::make($passwordBawaan);
         $user->status = 'aktif';
         $user->save();
 
-        // 3. Susun template pesan teks WhatsApp Persetujuan
+        // Susun template pesan teks WhatsApp Persetujuan
         $pesanWA = "Halo, *{$user->name}*.\n\n";
         $pesanWA .= "Pengajuan aktivasi akun Anda di *Sistem Peminjaman Barang & Inventaris PNUP* telah *DISETUJUI*.\n\n";
         $pesanWA .= "Silakan login menggunakan kredensial berikut:\n";
@@ -87,14 +88,14 @@ class ActivationController extends Controller
         $pesanWA .= "• Password Bawaan: *{$passwordBawaan}*\n\n";
         $pesanWA .= "⚠️ _Demi keamanan data, mohon segera ubah password bawaan ini setelah Anda berhasil masuk ke sistem melalui menu Profile._";
 
-        // 4. SINKRONISASI: Kirim WA menggunakan WhatsappService global
+        // Kirim WA menggunakan WhatsappService global
         WhatsappService::sendMessage($user->no_hp, $pesanWA);
 
         return redirect()->back()->with('success', "Akun {$user->name} berhasil diaktifkan! Password bawaan telah otomatis dikirim ke WhatsApp.");
     }
 
     /**
-     * SISI ADMIN: Menolak atau membatalkan antrean aktivasi akun dan mengirim notifikasi WA
+     * SISI ADMIN: Menolak atau membatalkan antrean aktivasi akun
      */
     public function rejectActivation($id)
     {
@@ -104,16 +105,13 @@ class ActivationController extends Controller
             return redirect()->back()->with('error', 'Akun tidak dalam antrean aktivasi.');
         }
 
-        // 1. Kembalikan status menjadi nonaktif
         $user->status = 'nonaktif';
         $user->save();
 
-        // 2. Susun template pesan teks WhatsApp Penolakan
         $pesanWA = "Halo, *{$user->name}*.\n\n";
         $pesanWA .= "Mohon maaf, pengajuan aktivasi akun Anda di *Sistem Peminjaman Barang & Inventaris PNUP* telah *DITOLAK* oleh Admin.\n\n";
         $pesanWA .= "Silakan pastikan kembali data diri Anda atau hubungi bagian Rumah Tangga / Admin Sistem jika merasa ada kekeliruan data.";
 
-        // 3. SINKRONISASI: Kirim WA menggunakan WhatsappService global
         WhatsappService::sendMessage($user->no_hp, $pesanWA);
 
         return redirect()->back()->with('success', "Permintaan aktivasi akun {$user->name} berhasil ditolak dan notifikasi telah dikirim.");

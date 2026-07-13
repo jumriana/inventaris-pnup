@@ -34,9 +34,10 @@
                         <table class="table table-hover align-middle mb-0">
                             <thead class="table-light text-secondary">
                                 <tr>
-                                    <th class="ps-4" style="width: 80px;">No</th>
+                                    <th class="ps-4" style="width: 60px;">No</th>
                                     <th>NIM / NIP Civitas</th>
                                     <th>Nama Lengkap</th>
+                                    <th>Email Civitas</th>
                                     <th>No. WhatsApp</th>
                                     <th>Status Antrean</th>
                                     <th class="text-center" style="width: 250px;">Aksi</th>
@@ -50,6 +51,16 @@
                                             <span class="badge bg-secondary px-2 py-1.5 font-monospace">{{ $user->identity_number }}</span>
                                         </td>
                                         <td class="fw-semibold text-dark">{{ $user->name }}</td>
+                                        
+                                        {{-- Kolom Data Email Pendaftar --}}
+                                        <td class="text-secondary small fw-medium">
+                                            @if($user->email)
+                                                <i class="fas fa-envelope text-muted me-1"></i> {{ $user->email }}
+                                            @else
+                                                <span class="text-muted italic">Tidak ada email</span>
+                                            @endif
+                                        </td>
+
                                         <td>
                                             <a href="https://wa.me/{{ $user->no_hp }}" target="_blank" class="text-decoration-none text-success fw-medium">
                                                 <i class="fab fa-whatsapp me-1"></i> +{{ $user->no_hp }}
@@ -82,7 +93,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="6" class="text-center py-5 text-secondary">
+                                        <td colspan="7" class="text-center py-5 text-secondary">
                                             <i class="fas fa-user-shield fa-3x mb-3 text-muted"></i>
                                             <p class="mb-0 fw-medium">Bersih! Tidak ada antrean pengajuan aktivasi akun baru saat ini.</p>
                                         </td>
@@ -107,7 +118,7 @@
             text: "Menyetujui akun " + nama + " dan mengirim password bawaan via WhatsApp.",
             icon: 'question',
             showCancelButton: true,
-            confirmButtonColor: '#198754', // Warna hijau Bootstrap
+            confirmButtonColor: '#198754', 
             cancelButtonColor: '#6c757d',
             confirmButtonText: 'Ya, Setujui!',
             cancelButtonText: 'Batal',
@@ -129,7 +140,7 @@
             text: "Apakah Anda yakin ingin menolak aktivasi akun " + nama + "?",
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#dc3545', // Warna merah Bootstrap
+            confirmButtonColor: '#dc3545', 
             cancelButtonColor: '#6c757d',
             confirmButtonText: 'Ya, Tolak!',
             cancelButtonText: 'Batal',
