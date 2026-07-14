@@ -32,16 +32,33 @@ class PengingatPeminjamanCommand extends Command
                                 ->whereDate('tgl_kembali', '<', $hariIni) // Tanggal kembali sudah lewat dari hari ini
                                 ->get();
 
+        // Variabel untuk menghitung berapa banyak pesan yang dikirim
+        $counter = 0;
+
         foreach ($sudahTelat as $p) {
-            if ($p->nomor_wa) {
+            // Mencegah error jika data user ternyata tidak ditemukan/terhapus
+            if (!$p->user) {
+                continue;
+            }
+
+            /**
+             * Mengambil nomor WhatsApp secara dinamis.
+             * Mencari di tabel users (no_hp atau nomor_wa), 
+             * jika tidak ada baru mengambil dari kolom nomor_wa di tabel peminjaman.
+             */
+            $nomorWa = $p->user->no_hp ?? $p->user->nomor_wa ?? $p->nomor_wa;
+
+            if ($nomorWa) {
                 // Deteksi Nama Aset secara dinamis
                 $namaAset = '';
-                if ($p->barang_id) {
+                if ($p->barang_id && $p->barang) {
                     $namaAset = $p->barang->nama_barang;
-                } elseif ($p->kendaraan_id) {
+                } elseif ($p->kendaraan_id && $p->kendaraan) {
                     $namaAset = $p->kendaraan->nama_kendaraan . ' [' . ($p->kendaraan->plat_nomor ?? '-') . ']';
-                } elseif ($p->ruangan_id) {
+                } elseif ($p->ruangan_id && $p->ruangan) {
                     $namaAset = $p->ruangan->nama_ruangan;
+                } else {
+                    $namaAset = 'Aset Tidak Diketahui';
                 }
 
                 // Hitung selisih hari keterlambatan secara akurat
@@ -60,10 +77,12 @@ class PengingatPeminjamanCommand extends Command
                             . "_- Sistem Pinjam-INV PNUP -_";
 
                 // Eksekusi pengiriman pesan via Fonnte API
-                WhatsappService::sendMessage($p->nomor_wa, $pesanTelat);
+                WhatsappService::sendMessage($nomorWa, $pesanTelat);
+                
+                $counter++;
             }
         }
 
-        $this->info('Notifikasi peringatan keterlambatan berhasil diproses!');
+        $this->info("Notifikasi peringatan keterlambatan berhasil diproses! ($counter pesan dikirim)");
     }
 }
