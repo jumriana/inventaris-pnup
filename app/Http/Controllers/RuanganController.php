@@ -75,10 +75,11 @@ class RuanganController extends Controller
             'nama_ruangan' => 'required|string|max:255',
             'lokasi'       => 'required|string|max:255',
             'kapasitas'    => 'required|numeric|min:1',
+            'status'       => 'required|in:Tersedia,Dipakai,Perbaikan',
             'gambar'       => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
         ]);
 
-        $data = $request->only(['kode_ruangan', 'nama_ruangan', 'lokasi', 'kapasitas', 'keterangan']);
+        $data = $request->only(['kode_ruangan', 'nama_ruangan', 'lokasi', 'kapasitas', 'status', 'keterangan']);
 
         // Logika otomatis penentuan wajib surat izin
         $nama = strtolower($request->nama_ruangan);
@@ -88,7 +89,10 @@ class RuanganController extends Controller
             $data['butuh_surat'] = 0; 
         }
 
-        $data['status'] = 'Tersedia';
+        // Fallback jika input status kosong (meski sudah diproteksi required)
+        if (!$request->filled('status')) {
+            $data['status'] = 'Tersedia';
+        }
 
         // Proses Unggah Gambar
         if ($request->hasFile('gambar')) {
@@ -129,20 +133,17 @@ class RuanganController extends Controller
 
         $ruangan = Ruangan::findOrFail($id);
         
-        // Validasi data input form edit
+        // Validasi data input form edit dengan aturan status 'required'
         $request->validate([
             'kode_ruangan' => 'required|string|max:50|unique:ruangan,kode_ruangan,' . $id,
             'nama_ruangan' => 'required|string|max:255',
             'lokasi'       => 'required|string|max:255',
             'kapasitas'    => 'required|numeric|min:1',
-            'status'       => 'nullable|in:Tersedia,Dipakai,Perbaikan',
+            'status'       => 'required|in:Tersedia,Dipakai,Perbaikan',
             'gambar'       => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
         ]);
 
-        $data = $request->only(['kode_ruangan', 'nama_ruangan', 'lokasi', 'kapasitas', 'keterangan']);
-
-        // Ambil nilai status baru dari form, jika form tidak mengirimkannya gunakan status lama di database
-        $data['status'] = $request->input('status', $ruangan->status);
+        $data = $request->only(['kode_ruangan', 'nama_ruangan', 'lokasi', 'kapasitas', 'status', 'keterangan']);
 
         // Logika otomatis surat izin tetap berjalan jika nama_ruangan ikut diubah
         $nama = strtolower($request->nama_ruangan);

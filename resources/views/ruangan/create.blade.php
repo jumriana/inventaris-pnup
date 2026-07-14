@@ -60,19 +60,44 @@
                         @enderror
                     </div>
 
-                    {{-- 4. KAPASITAS --}}
-                    <div class="form-group">
-                        <label for="kapasitas">Kapasitas (Orang)</label>
-                        <div class="input-group">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text"><i class="fas fa-users"></i></span>
+                    {{-- 4. KAPASITAS & STATUS RUANGAN --}}
+                    <div class="row">
+                        {{-- KAPASITAS --}}
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="kapasitas">Kapasitas (Orang)</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fas fa-users"></i></span>
+                                    </div>
+                                    <input type="number" name="kapasitas" class="form-control @error('kapasitas') is-invalid @enderror" 
+                                           id="kapasitas" placeholder="Contoh: 50" value="{{ old('kapasitas') }}" required>
+                                </div>
+                                @error('kapasitas')
+                                    <span class="invalid-feedback d-block">{{ $message }}</span>
+                                @enderror
                             </div>
-                            <input type="number" name="kapasitas" class="form-control @error('kapasitas') is-invalid @enderror" 
-                                   id="kapasitas" placeholder="Contoh: 50" value="{{ old('kapasitas') }}" required>
                         </div>
-                        @error('kapasitas')
-                            <span class="invalid-feedback d-block">{{ $message }}</span>
-                        @enderror
+
+                        {{-- STATUS RUANGAN (BARU) --}}
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="status">Status Ruangan</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fas fa-info-circle"></i></span>
+                                    </div>
+                                    <select name="status" id="status" class="form-control @error('status') is-invalid @enderror" required>
+                                        <option value="Tersedia" {{ old('status') == 'Tersedia' ? 'selected' : '' }}>Tersedia</option>
+                                        <option value="Dipakai" {{ old('status') == 'Dipakai' ? 'selected' : '' }}>Dipakai</option>
+                                        <option value="Perbaikan" {{ old('status') == 'Perbaikan' ? 'selected' : '' }}>Perbaikan</option>
+                                    </select>
+                                </div>
+                                @error('status')
+                                    <span class="invalid-feedback d-block">{{ $message }}</span>
+                                @enderror
+                            </div>
+                        </div>
                     </div>
 
                     {{-- 5. KETERANGAN --}}
