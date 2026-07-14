@@ -83,9 +83,11 @@
                                 <small class="text-muted">Aula/Ruang Rapat</small>
                             @endif
 
+                            {{-- PERBAIKAN LINK SURAT IZIN --}}
                             @if($p->surat_izin)
                                 <div class="mt-2">
-                                    <a href="{{ asset('storage/' . $p->surat_izin) }}" target="_blank" class="btn btn-xs btn-outline-danger rounded-pill shadow-sm px-2">
+                                    {{-- Menggunakan alternatif path cadangan jika symlink utama hosting terpecah --}}
+                                    <a href="{{ url('storage/' . $p->surat_izin) }}" target="_blank" class="btn btn-xs btn-outline-danger rounded-pill shadow-sm px-2">
                                         <i class="fas fa-eye mr-1"></i> Lihat Surat Izin
                                     </a>
                                 </div>

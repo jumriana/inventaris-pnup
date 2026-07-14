@@ -92,3 +92,14 @@ Route::redirect('/home', '/dashboard');
 Route::get('/cek-password', function () {
     return Hash::make('Pnup123');
 });
+
+// RUTE PANCINGAN DARURAT UNTUK MEMPERBAIKI LINK STORAGE DI HOSTING
+Route::get('/generate-storage-link', function () {
+    try {
+        // Menjalankan perintah php artisan storage:link via browser
+        Illuminate\Support\Facades\Artisan::call('storage:link');
+        return 'Tautan simbolik storage berhasil dibuat! Silakan cek kembali surat izin Anda.';
+    } catch (\Exception $e) {
+        return 'Gagal membuat tautan: ' . $e->getMessage();
+    }
+});
