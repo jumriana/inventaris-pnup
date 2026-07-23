@@ -4,28 +4,39 @@ $(document).ready(function () {
     // =========================================================================
     // 1. KODE UNTUK HALAMAN INDEX (Daftar Ruangan - Konfirmasi Hapus Admin)
     // =========================================================================
-    if ($('.form-hapus').length > 0) {
-        $(document).on('submit', '.form-hapus', function(e) {
-            e.preventDefault();
-            var form = this;
+    // Menangani klik pada tombol dengan class .btn-konfirmasi-hapus
+    $(document).on('click', '.btn-konfirmasi-hapus', function (e) {
+        e.preventDefault();
+        
+        var button = $(this);
+        var form = button.closest('form');
+        var namaRuangan = button.data('nama') || 'ruangan ini';
 
-            Swal.fire({
-                title: 'Apakah Anda yakin?',
-                text: "Data ruangan beserta riwayat peminjamannya akan dihapus secara permanen dari sistem!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#dc3545',
-                cancelButtonColor: '#6c757d',
-                confirmButtonText: 'Ya, Hapus!',
-                cancelButtonText: 'Batal',
-                allowOutsideClick: false
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    form.submit();
-                }
-            });
+        Swal.fire({
+            title: 'Apakah Anda yakin?',
+            text: 'Data "' + namaRuangan + '" beserta riwayat peminjamannya akan dihapus secara permanen dari sistem!',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal',
+            reverseButtons: true,
+            allowOutsideClick: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                form.submit(); // Eksekusi submit form hapus
+            }
         });
-    }
+    });
+
+    // Menangani submit langsung jika ada form dengan class .form-hapus atau .form-hapus-kustom
+    $(document).on('submit', '.form-hapus, .form-hapus-kustom', function (e) {
+        // Mencegah submit ganda jika event sudah ditangani oleh tombol di atas
+        if ($(this).data('confirmed')) {
+            return true;
+        }
+    });
 
     // =========================================================================
     // 2. KODE UNTUK HALAMAN CREATE / EDIT (Form Input File)

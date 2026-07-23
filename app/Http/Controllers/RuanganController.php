@@ -81,13 +81,8 @@ class RuanganController extends Controller
 
         $data = $request->only(['kode_ruangan', 'nama_ruangan', 'lokasi', 'kapasitas', 'status', 'keterangan']);
 
-        // Logika otomatis penentuan wajib surat izin
-        $nama = strtolower($request->nama_ruangan);
-        if (str_contains($nama, 'aula') || str_contains($nama, 'auditorium') || str_contains($nama, 'teater')) {
-            $data['butuh_surat'] = 1; 
-        } else {
-            $data['butuh_surat'] = 0; 
-        }
+        // Set SEMUA ruangan baru wajib menggunakan surat izin (1)
+        $data['butuh_surat'] = 1;
 
         // Fallback jika input status kosong (meski sudah diproteksi required)
         if (!$request->filled('status')) {
@@ -145,13 +140,8 @@ class RuanganController extends Controller
 
         $data = $request->only(['kode_ruangan', 'nama_ruangan', 'lokasi', 'kapasitas', 'status', 'keterangan']);
 
-        // Logika otomatis surat izin tetap berjalan jika nama_ruangan ikut diubah
-        $nama = strtolower($request->nama_ruangan);
-        if (str_contains($nama, 'aula') || str_contains($nama, 'auditorium') || str_contains($nama, 'teater')) {
-            $data['butuh_surat'] = 1;
-        } else {
-            $data['butuh_surat'] = 0;
-        }
+        // Memastikan saat di-update, status butuh_surat tetap bernilai 1 (Wajib) untuk semua ruangan
+        $data['butuh_surat'] = 1;
 
         // Logika Ganti Gambar & Hapus Berkas Lama
         if ($request->hasFile('gambar')) {
