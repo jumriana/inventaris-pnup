@@ -63,26 +63,22 @@
                             </div>
                         </div>
 
-                        {{-- KOLOM INPUT PASSWORD --}}
+                        {{-- KOLOM INPUT PASSWORD DENGAN IKON MATA --}}
                         <div class="mb-3">
                             <label class="form-label small fw-bold">Password</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light border-end-0" style="border-radius: 12px 0 0 12px; border: 1px solid #e9ecef;">
                                     <i class="fas fa-lock text-muted"></i>
                                 </span>
-                                <input type="password" name="password" 
+                                <input type="password" id="passwordInput" name="password" 
                                        class="form-control @error('password') is-invalid @enderror" 
                                        required autocomplete="current-password" 
                                        placeholder="Masukkan password Anda"
-                                       style="border-radius: 0 12px 12px 0 !important; border-left: none !important;">
+                                       style="border-radius: 0 !important; border-left: none !important; border-right: none !important;">
+                                <button type="button" class="btn btn-outline-light border border-start-0 text-muted" id="togglePasswordBtn" style="border-radius: 0 12px 12px 0; border-color: #e9ecef !important; background-color: #f8f9fa;">
+                                    <i class="fas fa-eye" id="toggleIcon"></i>
+                                </button>
                             </div>
-                        </div>
-
-                        <div class="mb-3 form-check">
-                            <input class="form-check-input" type="checkbox" name="remember" id="remember" {{ old('remember') ? 'checked' : '' }}>
-                            <label class="form-check-label small text-secondary" for="remember">
-                                Ingat Saya di Perangkat Ini
-                            </label>
                         </div>
 
                         {{-- TOMBOL SIGN IN --}}
@@ -116,4 +112,27 @@
         </div>
     </div>
 </div>
+
+{{-- SCRIPT JAVASCRIPT UNTUK TOGGLE SHOW/HIDE PASSWORD --}}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const togglePasswordBtn = document.getElementById('togglePasswordBtn');
+    const passwordInput = document.getElementById('passwordInput');
+    const toggleIcon = document.getElementById('toggleIcon');
+
+    if (togglePasswordBtn && passwordInput && toggleIcon) {
+        togglePasswordBtn.addEventListener('click', function () {
+            // Cek tipe input saat ini
+            const isPassword = passwordInput.getAttribute('type') === 'password';
+            
+            // Ubah tipe input
+            passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+            
+            // Ubah icon mata (fa-eye <-> fa-eye-slash)
+            toggleIcon.classList.toggle('fa-eye', !isPassword);
+            toggleIcon.classList.toggle('fa-eye-slash', isPassword);
+        });
+    }
+});
+</script>
 @endsection

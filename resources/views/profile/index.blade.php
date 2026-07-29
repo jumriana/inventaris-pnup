@@ -62,26 +62,42 @@
                         </div>
 
                         <div class="row">
+                            {{-- PASSWORD BARU --}}
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label for="password">Password Baru</label>
-                                    <input type="password" name="password" 
-                                           class="form-control @error('password') is-invalid @enderror" 
-                                           id="password" 
-                                           placeholder="Minimal 8 karakter">
+                                    <div class="position-relative">
+                                        <input type="password" name="password" 
+                                               class="form-control pr-5 @error('password') is-invalid @enderror" 
+                                               id="password" 
+                                               placeholder="Minimal 8 karakter">
+                                        <button type="button" id="togglePassword" 
+                                                class="btn btn-link text-muted position-absolute" 
+                                                style="top: 50%; right: 10px; transform: translateY(-50%); text-decoration: none; padding: 0; border: none; background: transparent;">
+                                            <i class="fas fa-eye" id="iconPassword"></i>
+                                        </button>
+                                    </div>
                                     @error('password')
-                                        <span class="invalid-feedback">{{ $message }}</span>
+                                        <span class="text-danger small mt-1 d-block">{{ $message }}</span>
                                     @enderror
                                 </div>
                             </div>
 
+                            {{-- KONFIRMASI PASSWORD --}}
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label for="password_confirmation">Konfirmasi Password</label>
-                                    <input type="password" name="password_confirmation" 
-                                           class="form-control" 
-                                           id="password_confirmation" 
-                                           placeholder="Ulangi password baru">
+                                    <div class="position-relative">
+                                        <input type="password" name="password_confirmation" 
+                                               class="form-control pr-5" 
+                                               id="password_confirmation" 
+                                               placeholder="Ulangi password baru">
+                                        <button type="button" id="togglePasswordConfirmation" 
+                                                class="btn btn-link text-muted position-absolute" 
+                                                style="top: 50%; right: 10px; transform: translateY(-50%); text-decoration: none; padding: 0; border: none; background: transparent;">
+                                            <i class="fas fa-eye" id="iconPasswordConfirmation"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -98,3 +114,27 @@
     </div>
 </div>
 @stop
+
+@push('js')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    function setupPasswordToggle(buttonId, inputId, iconId) {
+        const toggleBtn = document.getElementById(buttonId);
+        const passwordInput = document.getElementById(inputId);
+        const toggleIcon = document.getElementById(iconId);
+
+        if (toggleBtn && passwordInput && toggleIcon) {
+            toggleBtn.addEventListener('click', function () {
+                const isPassword = passwordInput.getAttribute('type') === 'password';
+                passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+                toggleIcon.classList.toggle('fa-eye', !isPassword);
+                toggleIcon.classList.toggle('fa-eye-slash', isPassword);
+            });
+        }
+    }
+
+    setupPasswordToggle('togglePassword', 'password', 'iconPassword');
+    setupPasswordToggle('togglePasswordConfirmation', 'password_confirmation', 'iconPasswordConfirmation');
+});
+</script>
+@endpush
