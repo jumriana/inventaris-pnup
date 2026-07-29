@@ -11,8 +11,10 @@
     <div class="card shadow mb-4 border-left-primary">
         <div class="card-header py-3 d-flex justify-content-between align-items-center bg-white">
             <h6 class="m-0 font-weight-bold text-primary">Data Peminjaman Barang & Inventaris</h6>
-            <a href="{{ route('report.pdf', request()->all()) }}" class="btn btn-danger btn-sm shadow-sm">
-                <i class="fas fa-file-pdf"></i> Cetak PDF
+            
+            {{-- PERBAIKAN: Menambahkan text-white dan style inline color agar pasti berwarna putih --}}
+            <a href="{{ route('report.pdf', request()->all()) }}" class="btn btn-danger btn-sm text-white shadow-sm" style="color: #ffffff !important;">
+                <i class="fas fa-file-pdf text-white mr-1" style="color: #ffffff !important;"></i> Cetak PDF
             </a>
         </div>
         <div class="card-body">
@@ -42,7 +44,7 @@
                     <input type="date" name="end_date" id="end_date" class="form-control form-control-sm" value="{{ request('end_date') }}">
                 </div>
 
-                {{-- Tombol Submit Form diletakkan di bawah kontrol filter agar layout tetap rapi --}}
+                {{-- Tombol Submit Form --}}
                 <div class="col-12 d-flex justify-content-end mt-3">
                     <button type="submit" class="btn btn-primary btn-sm px-3 mr-2 shadow-sm">
                         <i class="fas fa-filter"></i> Filter

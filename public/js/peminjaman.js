@@ -81,16 +81,88 @@ $(document).ready(function () {
     // =========================================================================
     if ($('#pilih-kategori').length > 0) {
 
-        // 1. Validasi Tanggal Dinamis
+        // Fungsi mendapatkan string tanggal hari ini (YYYY-MM-DD)
+        function getTodayString() {
+            var today = new Date();
+            var dd = String(today.getDate()).padStart(2, '0');
+            var mm = String(today.getMonth() + 1).padStart(2, '0');
+            var yyyy = today.getFullYear();
+            return yyyy + '-' + mm + '-' + dd;
+        }
+
+        // 1. PEMBATASAN TANGGAL MAKSIMAL 7 HARI & KUNCI TANGGAL LALU
+        function updateLimitTanggal() {
+            var todayStr = getTodayString();
+            var tglPinjamInput = $('#tgl_pinjam');
+            var tglKembaliInput = $('#tgl_kembali');
+
+            if (tglPinjamInput.length && tglKembaliInput.length) {
+                // Kunci tanggal pinjam agar tidak bisa memilih tanggal yang sudah lewat
+                tglPinjamInput.attr('min', todayStr);
+
+                if (!tglPinjamInput.val() || tglPinjamInput.val() < todayStr) {
+                    tglPinjamInput.val(todayStr);
+                }
+
+                var tglPinjamVal = tglPinjamInput.val();
+                if (tglPinjamVal) {
+                    var tglPinjam = new Date(tglPinjamVal);
+                    var minKembaliStr = tglPinjamVal;
+
+                    // Maksimal 7 hari dari tanggal pinjam
+                    var maxKembali = new Date(tglPinjam);
+                    maxKembali.setDate(maxKembali.getDate() + 7);
+                    var maxKembaliStr = maxKembali.toISOString().split('T')[0];
+
+                    tglKembaliInput.attr('min', minKembaliStr);
+                    tglKembaliInput.attr('max', maxKembaliStr);
+
+                    var tglKembaliVal = tglKembaliInput.val();
+                    if (tglKembaliVal && (tglKembaliVal < minKembaliStr || tglKembaliVal > maxKembaliStr)) {
+                        tglKembaliInput.val(maxKembaliStr);
+                    }
+                }
+            }
+        }
+
+        // Jalankan saat awal dimuat
+        updateLimitTanggal();
+
+        // Validasi event saat tanggal pinjam diubah
         $('#tgl_pinjam').on('change', function() {
-            var selectedDate = $(this).val();
-            $('#tgl_kembali').attr('min', selectedDate);
-            if ($('#tgl_kembali').val() < selectedDate) {
-                $('#tgl_kembali').val(selectedDate);
+            var todayStr = getTodayString();
+            if ($(this).val() < todayStr) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Tanggal Tidak Valid',
+                    text: 'Tanggal pinjam tidak boleh memilih tanggal yang sudah lewat.',
+                    confirmButtonColor: '#3085d6'
+                });
+                $(this).val(todayStr);
+            }
+            updateLimitTanggal();
+        });
+
+        // Validasi event saat tanggal kembali diubah
+        $('#tgl_kembali').on('change', function() {
+            var maxAllowed = $(this).attr('max');
+            var minAllowed = $(this).attr('min');
+            var selectedVal = $(this).val();
+
+            if (selectedVal && maxAllowed && selectedVal > maxAllowed) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Batas Peminjaman Terlampaui',
+                    text: 'Peminjaman maksimal hanya diperbolehkan selama 1 minggu (7 hari) dari tanggal pinjam.',
+                    confirmButtonColor: '#3085d6'
+                });
+                $(this).val(maxAllowed);
+            } else if (selectedVal && minAllowed && selectedVal < minAllowed) {
+                $(this).val(minAllowed);
             }
         });
 
-        // 2. Logika Deteksi Tampilan Input Surat Izin (Ruangan & Kendaraan)
+        // 2. LOGIKA DETEKSI TAMPILAN INPUT SURAT IZIN
         function handleSuratIzinVisibility(kategori) {
             if (kategori === 'ruangan' || kategori === 'kendaraan') {
                 $('#container-surat-izin').slideDown();
@@ -114,7 +186,7 @@ $(document).ready(function () {
             handleSuratIzinVisibility(kategori);
         });
 
-        // 3. Hapus Baris Dinamis Tabel Barang
+        // 3. HAPUS BARIS DINAMIS TABEL BARANG
         $(document).on('click', '.remove-row', function() {
             $(this).closest('tr').remove();
         });

@@ -19,10 +19,12 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
-        'identity_number', // <-- PERBAIKAN: Diizinkan agar Laravel bisa membaca NIM / NIP saat login
+        'identity_number', // Diizinkan agar Laravel bisa membaca NIM / NIP saat login
         'email',
         'password',
-        'role',            // <-- PERBAIKAN: Diizinkan agar Laravel bisa membaca hak akses (User/Admin)
+        'role',            // Diizinkan agar Laravel bisa membaca hak akses (User/Admin)
+        'no_hp',           // <-- TAMBAHAN: Agar nomor WhatsApp/HP bisa disimpan & di-update
+        'status',          // <-- TAMBAHAN: Agar status verifikasi (nonaktif/pending/aktif) bisa disimpan
     ];
 
     /**

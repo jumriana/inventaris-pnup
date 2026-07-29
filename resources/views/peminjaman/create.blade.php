@@ -29,20 +29,27 @@
                            name="tgl_pinjam" 
                            id="tgl_pinjam"
                            class="form-control @error('tgl_pinjam') is-invalid @enderror" 
-                           value="{{ date('Y-m-d') }}" 
+                           value="{{ old('tgl_pinjam', date('Y-m-d')) }}" 
                            min="{{ date('Y-m-d') }}" 
                            required>
+                    @error('tgl_pinjam')
+                        <span class="invalid-feedback" role="alert"><strong>{{ $message }}</strong></span>
+                    @enderror
                 </div>
 
                 {{-- Rencana Kembali --}}
                 <div class="col-md-4 form-group">
-                    <label>Rencana Kembali</label>
+                    <label>Rencana Kembali (Maks. 1 Minggu)</label>
                     <input type="date" 
                            name="tgl_kembali" 
                            id="tgl_kembali"
                            class="form-control @error('tgl_kembali') is-invalid @enderror" 
+                           value="{{ old('tgl_kembali') }}" 
                            min="{{ date('Y-m-d') }}" 
                            required>
+                    @error('tgl_kembali')
+                        <span class="invalid-feedback" role="alert"><strong>{{ $message }}</strong></span>
+                    @enderror
                 </div>
             </div>
 
@@ -54,14 +61,14 @@
                         <div class="input-group-prepend">
                             <span class="input-group-text"><i class="fab fa-whatsapp"></i></span>
                         </div>
-                        <input type="text" name="nomor_wa" class="form-control" placeholder="Contoh: 0821..." required>
+                        <input type="text" name="nomor_wa" class="form-control" value="{{ old('nomor_wa', Auth::user()->no_hp) }}" placeholder="Contoh: 0821..." required>
                     </div>
                 </div>
 
                 {{-- Keperluan --}}
                 <div class="col-md-4 form-group">
                     <label>Keperluan</label>
-                    <textarea name="keperluan" class="form-control" rows="1" placeholder="Tujuan peminjaman..." required></textarea>
+                    <textarea name="keperluan" class="form-control" rows="1" placeholder="Tujuan peminjaman..." required>{{ old('keperluan') }}</textarea>
                 </div>
 
                 {{-- Pilih Kategori Aset --}}
@@ -175,7 +182,66 @@
 <script src="{{ asset('js/peminjaman.js') }}"></script>
 <script>
     $(document).ready(function() {
-        // 1. Logika tombol Tambah Baris Dinamis (Tetap memunculkan teks Stok & atribut data-stok)
+        // ==========================================
+        // LOGIKA PEMBATASAN TANGGAL KEMBALI (MAX 1 MINGGU)
+        // ==========================================
+        function updateLimitTanggalKembali() {
+            var tglPinjamVal = $('#tgl_pinjam').val();
+            
+            if (tglPinjamVal) {
+                var tglPinjam = new Date(tglPinjamVal);
+                
+                // 1. Tanggal minimal kembali = Tanggal Pinjam
+                var minKembaliStr = tglPinjamVal;
+
+                // 2. Tanggal maksimal kembali = Tanggal Pinjam + 7 Hari
+                var maxKembali = new Date(tglPinjam);
+                maxKembali.setDate(maxKembali.getDate() + 7);
+                var maxKembaliStr = maxKembali.toISOString().split('T')[0];
+
+                // Pasang batas min dan max ke atribut HTML input tgl_kembali
+                $('#tgl_kembali').attr('min', minKembaliStr);
+                $('#tgl_kembali').attr('max', maxKembaliStr);
+
+                // Jika tanggal kembali saat ini di luar batas, reset atau posisikan ke batas max
+                var tglKembaliVal = $('#tgl_kembali').val();
+                if (tglKembaliVal && (tglKembaliVal < minKembaliStr || tglKembaliVal > maxKembaliStr)) {
+                    $('#tgl_kembali').val(maxKembaliStr);
+                }
+            }
+        }
+
+        // Jalankan saat pertama dimuat
+        updateLimitTanggalKembali();
+
+        // Jalankan saat tanggal pinjam diubah oleh pengguna
+        $('#tgl_pinjam').on('change', function() {
+            updateLimitTanggalKembali();
+        });
+
+        // Peringatan jika pengguna memaksa memilih tanggal di luar 7 hari secara manual
+        $('#tgl_kembali').on('change', function() {
+            var maxAllowed = $(this).attr('max');
+            var minAllowed = $(this).attr('min');
+            var selectedVal = $(this).val();
+
+            if (selectedVal && maxAllowed && selectedVal > maxAllowed) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Batas Peminjaman Terlampaui',
+                    text: 'Peminjaman maksimal hanya diperbolehkan selama 1 minggu (7 hari) dari tanggal pinjam.',
+                    confirmButtonColor: '#3085d6'
+                });
+                $(this).val(maxAllowed);
+            } else if (selectedVal && minAllowed && selectedVal < minAllowed) {
+                $(this).val(minAllowed);
+            }
+        });
+
+        // ==========================================
+        // LOGIKA BARANG DINAMIS & STOK
+        // ==========================================
+        // 1. Logika tombol Tambah Baris Dinamis
         $('#addRow').click(function() {
             var newRow = `<tr>
                 <td>
@@ -205,7 +271,6 @@
             if (stok !== undefined && stok !== '') {
                 inputJumlah.attr('max', stok);
                 
-                // Jika nilai input saat ini melampaui stok baru yang dipilih, set ke nilai maksimum
                 if (parseInt(inputJumlah.val()) > parseInt(stok)) {
                     inputJumlah.val(stok);
                 }
@@ -226,11 +291,11 @@
                     text: 'Anda tidak dapat meminjam melebihi sisa stok yang tersedia (' + maxStok + ' Unit).',
                     confirmButtonColor: '#3085d6'
                 });
-                $(this).val(maxStok); // Kembalikan nilai ke batas maksimal stok
+                $(this).val(maxStok);
             }
         });
 
-        // Trigger perubahan awal untuk mengaktifkan max jika barang sudah ter-select saat halaman dimuat
+        // Trigger perubahan awal
         $('.select-barang').trigger('change');
     });
 </script>

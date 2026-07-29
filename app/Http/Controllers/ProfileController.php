@@ -48,6 +48,7 @@ class ProfileController extends Controller
                 'max:255', 
                 Rule::unique('users')->ignore($user->id)
             ],
+            'no_hp'    => 'nullable|string|max:20', // Validasi nomor HP/WhatsApp
             'password' => 'nullable|string|min:8|confirmed',
         ], [
             // Custom Messages Bahasa Indonesia
@@ -55,13 +56,15 @@ class ProfileController extends Controller
             'email.required'     => 'Email tidak boleh kosong.',
             'email.email'        => 'Format email tidak valid.',
             'email.unique'       => 'Email sudah digunakan oleh pengguna lain.',
+            'no_hp.max'          => 'Nomor HP/WhatsApp maksimal 20 karakter.',
             'password.min'       => 'Password minimal harus 8 karakter.',
             'password.confirmed' => 'Konfirmasi password tidak cocok.',
         ]);
 
         // 2. Update Data
-        $user->name = $request->name;
+        $user->name  = $request->name;
         $user->email = $request->email;
+        $user->no_hp = $request->no_hp; // TAMBAHAN: Simpan no_hp ke database
 
         // 3. Update password jika diisi
         if ($request->filled('password')) {
@@ -71,7 +74,7 @@ class ProfileController extends Controller
         // 4. Simpan ke Database
         $user->save();
 
-        // 5. Redirect kembali ke halaman yang sama (admin/settings) dengan pesan sukses
+        // 5. Redirect kembali ke halaman profil dengan pesan sukses
         return redirect()->route('profile.index')->with('success', 'Profil Anda berhasil diperbarui!');
     }
 }

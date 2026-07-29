@@ -10,6 +10,7 @@ use App\Models\Ruangan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Services\WhatsappService; // Import Service WhatsApp Fonnte
+use Carbon\Carbon;
 
 class PeminjamanController extends Controller
 {
@@ -56,14 +57,35 @@ class PeminjamanController extends Controller
      */
     public function store(Request $request)
     {
+        // Hitung batas tanggal maksimal kembali (tgl_pinjam + 7 hari)
+        $maxKembali = $request->tgl_pinjam 
+            ? Carbon::parse($request->tgl_pinjam)->addDays(7)->format('Y-m-d') 
+            : null;
+
         // 1. VALIDASI INPUT FORM UTAMA
         $request->validate([
             'tgl_pinjam'   => 'required|date|after_or_equal:today',
-            'tgl_kembali'  => 'required|date|after_or_equal:tgl_pinjam',
+            'tgl_kembali'  => [
+                'required',
+                'date',
+                'after_or_equal:tgl_pinjam',
+                'before_or_equal:' . $maxKembali // Batas maksimal 7 hari dari tanggal pinjam
+            ],
             'nomor_wa'     => 'required|string',
             'keperluan'    => 'required|string',
             'kategori'     => 'required|in:barang,kendaraan,ruangan',
             'surat_izin'   => 'required_if:kategori,ruangan|required_if:kategori,kendaraan|nullable|mimes:pdf|max:2048',
+        ], [
+            'tgl_pinjam.required'         => 'Tanggal pinjam wajib diisi.',
+            'tgl_pinjam.after_or_equal'   => 'Tanggal pinjam tidak boleh tanggal yang sudah lewat.',
+            'tgl_kembali.required'        => 'Tanggal kembali wajib diisi.',
+            'tgl_kembali.after_or_equal'  => 'Tanggal kembali tidak boleh sebelum tanggal pinjam.',
+            'tgl_kembali.before_or_equal' => 'Durasi peminjaman maksimal adalah 7 hari (1 minggu).',
+            'nomor_wa.required'           => 'Nomor WhatsApp wajib diisi.',
+            'keperluan.required'          => 'Keperluan peminjaman wajib diisi.',
+            'surat_izin.required_if'      => 'Dokumen surat izin resmi (PDF) wajib diunggah untuk peminjaman ruangan atau kendaraan.',
+            'surat_izin.mimes'            => 'Berkas surat izin harus berformat PDF.',
+            'surat_izin.max'              => 'Ukuran berkas surat izin maksimal 2MB.',
         ]);
 
         // 2. HANDLE UPLOAD FILE SURAT IZIN

@@ -30,6 +30,7 @@
                         @csrf
                         @method('PUT')
 
+                        {{-- NAMA LENGKAP --}}
                         <div class="form-group">
                             <label for="name">Nama Lengkap</label>
                             <input type="text" name="name" 
@@ -42,8 +43,9 @@
                             @enderror
                         </div>
 
+                        {{-- ALAMAT EMAIL --}}
                         <div class="form-group">
-                            <label for="email">Alamat Email</label>
+                            <label for="email">Alamat Email (Gmail)</label>
                             <input type="email" name="email" 
                                    class="form-control @error('email') is-invalid @enderror" 
                                    id="email" 
@@ -52,6 +54,25 @@
                             @error('email')
                                 <span class="invalid-feedback">{{ $message }}</span>
                             @enderror
+                        </div>
+
+                        {{-- NOMOR WHATSAPP / HP --}}
+                        <div class="form-group">
+                            <label for="no_hp">Nomor WhatsApp / HP</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fab fa-whatsapp text-success"></i></span>
+                                </div>
+                                <input type="text" name="no_hp" 
+                                       class="form-control @error('no_hp') is-invalid @enderror" 
+                                       id="no_hp" 
+                                       value="{{ old('no_hp', $user->no_hp) }}" 
+                                       placeholder="Contoh: 081234567890">
+                                @error('no_hp')
+                                    <span class="invalid-feedback">{{ $message }}</span>
+                                @enderror
+                            </div>
+                            <small class="form-text text-muted">Nomor ini akan digunakan untuk konfirmasi dan pendaftaran peminjaman.</small>
                         </div>
 
                         <hr class="my-4">
