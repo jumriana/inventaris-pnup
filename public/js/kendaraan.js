@@ -4,7 +4,7 @@ $(document).ready(function () {
     // =========================================================================
     // 1. KODE UNTUK HALAMAN INDEX (Daftar Kendaraan - Konfirmasi Hapus Admin)
     // =========================================================================
-    // PERBAIKAN: Menyelaraskan selector click dengan class '.form-hapus-kustom' dan '.btn-konfirmasi-hapus'
+    // Menyelaraskan selector click dengan class '.form-hapus-kustom' dan '.btn-konfirmasi-hapus'
     if ($('.form-hapus-kustom').length > 0) {
         $(document).on('click', '.btn-konfirmasi-hapus', function(e) {
             e.preventDefault();
@@ -44,8 +44,8 @@ $(document).ready(function () {
 // =========================================================================
 function cekSuratIzinKendaraan(urlTujuan) {
     Swal.fire({
-        title: 'Konfirmasi Surat Izin Jalan',
-        text: 'Apakah Anda sudah memiliki surat izin resmi untuk penggunaan kendaraan operasional ini?',
+        title: 'Konfirmasi Surat Peminjaman',
+        text: 'Apakah Anda sudah memiliki surat peminjaman resmi untuk penggunaan kendaraan operasional ini?',
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#28a745',
@@ -62,17 +62,17 @@ function cekSuratIzinKendaraan(urlTujuan) {
             Swal.fire({
                 title: '<span class="font-weight-bold text-dark d-block mt-2">Informasi Persuratan Kendaraan</span>',
                 html: `
-                    <p class="text-muted small mb-4" style="text-align: left; font-size: 14px; line-height: 1.6;">Sesuai prosedur operasional Divisi Rumah Tangga PNUP, peminjaman kendaraan operasional diwajibkan melampirkan berkas surat izin peminjaman resmi.</p>
+                    <p class="text-muted small mb-4" style="text-align: left; font-size: 14px; line-height: 1.6;">Sesuai prosedur operasional Divisi Rumah Tangga PNUP, peminjaman kendaraan operasional diwajibkan melampirkan berkas surat peminjaman resmi.</p>
                     
                     <div class="text-left bg-white p-2" style="font-size: 14px; line-height: 1.6; text-align: left; border-top: 1px solid #eee;">
-                        <h6 class="text-warning font-weight-bold mb-3"><i class="fas fa-file-invoice mr-1"></i> Alur Pengurusan Surat Izin Kendaraan PNUP:</h6>
+                        <h6 class="text-warning font-weight-bold mb-3"><i class="fas fa-file-invoice mr-1"></i> Alur Pengurusan Surat Peminjaman Kendaraan PNUP:</h6>
                         
                         <div class="mb-3 pl-1" style="border-left: 3px solid #007bff; padding-left: 10px !important;">
                             <span class="text-primary font-weight-bold d-block mb-1"><i class="fas fa-graduation-cap mr-1"></i> KHUSUS MAHASISWA:</span>
                             <ol class="pl-3 text-secondary mb-0" style="line-height: 1.5; padding-left: 20px;">
                                 <li>Wajib menyiapkan <strong>Surat Pengantar</strong> dari Himpunan Mahasiswa (HIMA) atau Organisasi Kampus terkait mengenai tujuan penggunaan operasional.</li>
                                 <li>Membawa surat pengantar tersebut ke <strong>Wakil Direktur II (Wadir 2)</strong> untuk proses pengesahan/persetujuan resmi.</li>
-                                <li>Setelah surat izin resmi disahkan, silakan kembali ke website ini dan <strong>unggah (upload) berkas tersebut ke sistem</strong> agar langsung dicek oleh admin unit Rumah Tangga.</li>
+                                <li>Setelah surat peminjaman resmi disahkan, silakan kembali ke website ini dan <strong>unggah (upload) berkas tersebut ke sistem</strong> agar langsung dicek oleh admin unit Rumah Tangga.</li>
                             </ol>
                         </div>
 
@@ -84,7 +84,7 @@ function cekSuratIzinKendaraan(urlTujuan) {
                             </ol>
                         </div>
                     </div>
-                    <p class="text-muted text-center mt-3 mb-0" style="font-size: 12px; border-top: 1px dashed #ddd; padding-top: 8px;"><i class="fas fa-info-circle"></i> Setelah berkas surat izin resmi ber-nomor telah siap, silakan kembali lagi ke sistem ini untuk melanjutkan pengisian form dan mengunggah berkas PDF surat izin tersebut.</p>
+                    <p class="text-muted text-center mt-3 mb-0" style="font-size: 12px; border-top: 1px dashed #ddd; padding-top: 8px;"><i class="fas fa-info-circle"></i> Setelah berkas surat peminjaman resmi ber-nomor telah siap, silakan kembali lagi ke sistem ini untuk melanjutkan pengisian form dan mengunggah berkas PDF surat peminjaman tersebut.</p>
                 `,
                 icon: 'info',
                 iconColor: '#007bff',

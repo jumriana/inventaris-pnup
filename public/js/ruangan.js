@@ -54,8 +54,8 @@ $(document).ready(function () {
 // =========================================================================
 function cekSuratIzin(urlTujuan) {
     Swal.fire({
-        title: 'Konfirmasi Surat Izin',
-        text: 'Apakah Anda sudah memiliki surat izin resmi untuk penggunaan ruangan ini?',
+        title: 'Konfirmasi Surat Peminjaman',
+        text: 'Apakah Anda sudah memiliki surat peminjaman resmi untuk penggunaan ruangan ini?',
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#28a745',
@@ -64,26 +64,26 @@ function cekSuratIzin(urlTujuan) {
         cancelButtonText: 'Belum Ada',
         allowOutsideClick: false
     }).then((result) => {
-        // JIKA MAHASISWA/DOSEN SUDAH MENYIAPKAN SURAT IZIN
+        // JIKA MAHASISWA/DOSEN SUDAH MENYIAPKAN SURAT PEMINJAMAN
         if (result.isConfirmed) {
             window.location.href = urlTujuan;
         } 
-        // JIKA MAHASISWA/DOSEN BELUM MEMILIKI SURAT IZIN (TAMPILKAN ALUR BIROKRASI UPDATE BARU)
+        // JIKA MAHASISWA/DOSEN BELUM MEMILIKI SURAT PEMINJAMAN (TAMPILKAN ALUR BIROKRASI UPDATE BARU)
         else if (result.dismiss === Swal.DismissReason.cancel) {
             Swal.fire({
                 title: '<span class="font-weight-bold text-dark d-block mt-2">Informasi Persuratan Ruangan</span>',
                 html: `
-                    <p class="text-muted small mb-4" style="text-align: left; font-size: 14px; line-height: 1.6;">Sesuai prosedur operasional Divisi Rumah Tangga PNUP, peminjaman fasilitas ruangan/aula diwajibkan melampirkan berkas surat izin peminjaman resmi.</p>
+                    <p class="text-muted small mb-4" style="text-align: left; font-size: 14px; line-height: 1.6;">Sesuai prosedur operasional Divisi Rumah Tangga PNUP, peminjaman fasilitas ruangan/aula diwajibkan melampirkan berkas surat peminjaman resmi.</p>
                     
                     <div class="text-left bg-white p-2" style="font-size: 14px; line-height: 1.6; text-align: left; border-top: 1px solid #eee;">
-                        <h6 class="text-warning font-weight-bold mb-3"><i class="fas fa-file-invoice mr-1"></i> Alur Pengurusan Surat Izin Ruangan PNUP:</h6>
+                        <h6 class="text-warning font-weight-bold mb-3"><i class="fas fa-file-invoice mr-1"></i> Alur Pengurusan Surat Peminjaman Ruangan PNUP:</h6>
                         
                         <div class="mb-3 pl-1" style="border-left: 3px solid #007bff; padding-left: 10px !important;">
                             <span class="text-primary font-weight-bold d-block mb-1"><i class="fas fa-graduation-cap mr-1"></i> KHUSUS MAHASISWA:</span>
                             <ol class="pl-3 text-secondary mb-0" style="line-height: 1.5; padding-left: 20px;">
                                 <li>Wajib menyiapkan <strong>Surat Pengantar</strong> dari Himpunan Mahasiswa (HIMA) atau Organisasi Kampus terkait mengenai tujuan penggunaan.</li>
                                 <li>Membawa surat pengantar tersebut ke <strong>Wakil Direktur II (Wadir 2)</strong> untuk proses pengesahan/persetujuan resmi.</li>
-                                <li>Setelah surat izin resmi disahkan, silakan kembali ke website ini dan <strong>unggah (upload) berkas tersebut ke sistem</strong> agar langsung dicek oleh admin unit Rumah Tangga.</li>
+                                <li>Setelah surat peminjaman resmi disahkan, silakan kembali ke website ini dan <strong>unggah (upload) berkas tersebut ke sistem</strong> agar langsung dicek oleh admin unit Rumah Tangga.</li>
                             </ol>
                         </div>
 
@@ -95,7 +95,7 @@ function cekSuratIzin(urlTujuan) {
                             </ol>
                         </div>
                     </div>
-                    <p class="text-muted text-center mt-3 mb-0" style="font-size: 12px; border-top: 1px dashed #ddd; padding-top: 8px;"><i class="fas fa-info-circle"></i> Setelah berkas surat izin resmi ber-nomor telah siap, silakan kembali lagi ke sistem ini untuk melanjutkan proses peminjaman.</p>
+                    <p class="text-muted text-center mt-3 mb-0" style="font-size: 12px; border-top: 1px dashed #ddd; padding-top: 8px;"><i class="fas fa-info-circle"></i> Setelah berkas surat peminjaman resmi ber-nomor telah siap, silakan kembali lagi ke sistem ini untuk melanjutkan proses peminjaman.</p>
                 `,
                 icon: 'info',
                 iconColor: '#007bff',

@@ -85,7 +85,7 @@
             {{-- Komponen Input Berkas PDF Surat Izin --}}
             <div class="form-group mt-2" id="container-surat-izin" style="display: none;">
                 <label for="surat_izin" class="font-weight-bold text-danger">
-                    <i class="fas fa-file-pdf mr-1"></i> Upload Dokumen Surat Izin Resmi Kampus (Format: PDF, Maks: 2MB) *
+                    <i class="fas fa-file-pdf mr-1"></i> Upload Dokumen Surat Peminjaman Resmi Kampus (Format: PDF, Maks: 2MB) *
                 </label>
                 <div class="input-group">
                     <div class="input-group-prepend">
