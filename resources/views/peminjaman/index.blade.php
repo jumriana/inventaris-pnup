@@ -86,7 +86,6 @@
                             {{-- PERBAIKAN LINK SURAT IZIN --}}
                             @if($p->surat_izin)
                                 <div class="mt-2">
-                                    {{-- Menggunakan alternatif path cadangan jika symlink utama hosting terpecah --}}
                                     <a href="{{ url('storage/' . $p->surat_izin) }}" target="_blank" class="btn btn-xs btn-outline-danger rounded-pill shadow-sm px-2">
                                         <i class="fas fa-eye mr-1"></i> Lihat Surat Izin
                                     </a>
@@ -127,13 +126,44 @@
                                             <i class="fas fa-check"></i> Setujui
                                         </button>
                                     </form>
-                                    <form action="{{ route('peminjaman.tolak', $p->id) }}" method="POST" class="d-inline form-tolak">
-                                        @csrf
-                                        @method('PUT')
-                                        <button type="submit" class="btn btn-sm btn-danger shadow-sm" title="Tolak">
-                                            <i class="fas fa-times"></i>
-                                        </button>
-                                    </form>
+
+                                    <!-- Tombol Tolak Menggunakan Modal Pop-up dengan Teks Tolak -->
+                                    <button type="button" class="btn btn-sm btn-danger shadow-sm" data-toggle="modal" data-target="#modalTolak{{ $p->id }}" title="Tolak Peminjaman">
+                                        <i class="fas fa-times"></i> Tolak
+                                    </button>
+
+                                    <!-- Modal Form Alasan Penolakan -->
+                                    <div class="modal fade text-left" id="modalTolak{{ $p->id }}" tabindex="-1" role="dialog" aria-labelledby="modalTolakLabel{{ $p->id }}" aria-hidden="true">
+                                        <div class="modal-dialog" role="document">
+                                            <div class="modal-content">
+                                                <div class="modal-header bg-danger text-white">
+                                                    <h5 class="modal-title" id="modalTolakLabel{{ $p->id }}">
+                                                        <i class="fas fa-exclamation-circle mr-1"></i> Alasan Penolakan Peminjaman
+                                                    </h5>
+                                                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                                                        <span aria-hidden="true">&times;</span>
+                                                    </button>
+                                                </div>
+                                                <form action="{{ route('peminjaman.tolak', $p->id) }}" method="POST">
+                                                    @csrf
+                                                    @method('PUT')
+                                                    <div class="modal-body">
+                                                        <p class="text-dark">Masukkan alasan mengapa pengajuan oleh <strong>{{ $p->user->name ?? 'Pengguna' }}</strong> ditolak:</p>
+                                                        <div class="form-group">
+                                                            <label class="font-weight-bold text-dark">Alasan Penolakan <span class="text-danger">*</span></label>
+                                                            <textarea name="alasan_penolakan" class="form-control" rows="3" placeholder="Contoh: Jadwal bentrok / Berkas dokumen tidak lengkap / Aset sedang dalam perawatan" required></textarea>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                                                        <button type="submit" class="btn btn-danger">
+                                                            <i class="fas fa-paper-plane mr-1"></i> Kirim Penolakan & WA
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
                                 @endif
 
                                 @if(strtolower($p->status) == 'disetujui')

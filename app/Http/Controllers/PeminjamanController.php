@@ -369,13 +369,21 @@ class PeminjamanController extends Controller
     }
 
     /**
-     * Menolak permintaan peminjaman dan mengabari user lewat notifikasi otomatis WhatsApp.
+     * Menolak permintaan peminjaman dan mengabari user lewat notifikasi otomatis WhatsApp beserta alasannya.
      */
-    public function tolak($id)
+    public function tolak(Request $request, $id)
     {
+        // 1. Validasi input alasan penolakan dari modal form
+        $request->validate([
+            'alasan_penolakan' => 'required|string|max:500',
+        ], [
+            'alasan_penolakan.required' => 'Alasan penolakan wajib diisi.',
+        ]);
+
         $peminjaman = Peminjaman::with(['user', 'barang', 'kendaraan', 'ruangan'])->findOrFail($id);
         $peminjaman->update(['status' => 'ditolak']);
 
+        // 2. Kirim Notifikasi WhatsApp beserta Alasan Penolakan
         if ($peminjaman->nomor_wa) {
             $namaAset = '';
             if ($peminjaman->barang_id) {
@@ -393,8 +401,9 @@ class PeminjamanController extends Controller
                    . "Mohon maaf, pengajuan peminjaman aset Anda berikut ini *BELUM DAPAT DISETUJUI* oleh Admin Divisi Rumah Tangga PNUP:\n\n"
                    . "📌 *Detail Aset :* " . $namaAset . "\n"
                    . "📅 *Rencana Pinjam :* " . date('d M Y', strtotime($peminjaman->tgl_pinjam)) . "\n"
-                   . "💡 *Keperluan :* " . ($peminjaman->keperluan ?? '-') . "\n\n"
-                   . "Silakan ajukan kembali permohonan dengan menyesuaikan jadwal pengosongan aset atau hubungi bagian admin untuk info lebih lanjut.\n"
+                   . "💡 *Keperluan :* " . ($peminjaman->keperluan ?? '-') . "\n"
+                   . "⚠️ *Alasan Penolakan :* " . $request->alasan_penolakan . "\n\n"
+                   . "Silakan ajukan kembali permohonan dengan menyesuaikan catatan di atas atau hubungi bagian admin untuk informasi lebih lanjut.\n"
                    . "Terima kasih!\n\n"
                    . "_- Sistem Pinjam-INV PNUP -_";
 
@@ -403,7 +412,7 @@ class PeminjamanController extends Controller
             }
         }
 
-        return redirect()->back()->with('success', 'Permintaan peminjaman ditolak dan notifikasi WA telah dikirim.');
+        return redirect()->back()->with('success', 'Permintaan peminjaman berhasil ditolak dan alasan penolakan telah dikirimkan via WhatsApp.');
     }
 
     /**
