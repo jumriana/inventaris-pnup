@@ -12,8 +12,8 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // Contoh: Mengatur agar perintah dijalankan otomatis setiap hari pada jam 08:00 pagi
-        // $schedule->command('peminjaman:ingatkan')->dailyAt('08:00');
+        // Mengatur agar perintah pengingat WA H-1 dijalankan otomatis setiap hari pukul 08:00 pagi
+        $schedule->command('peminjaman:remind-h1')->dailyAt('08:00');
     }
 
     /**
