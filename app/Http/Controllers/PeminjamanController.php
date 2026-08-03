@@ -309,8 +309,10 @@ class PeminjamanController extends Controller
     public function kembalikan($id) 
     {
         try {
-            DB::transaction(function () use ($id) {
-                $peminjaman = Peminjaman::lockForUpdate()->findOrFail($id);
+            $peminjaman = null;
+
+            DB::transaction(function () use ($id, &$peminjaman) {
+                $peminjaman = Peminjaman::with(['user', 'barang', 'kendaraan', 'ruangan'])->lockForUpdate()->findOrFail($id);
 
                 if (strtolower($peminjaman->status) == 'disetujui') {
                     if ($peminjaman->barang_id) {
@@ -329,7 +331,37 @@ class PeminjamanController extends Controller
                 }
             });
 
-            return redirect()->back()->with('success', 'Aset telah dikembalikan dan status dipulihkan menjadi Tersedia.');
+            // --- PROSES KIRIM NOTIFIKASI WHATSAPP KEMBALIKAN VIA FONNTE ---
+            if ($peminjaman && $peminjaman->nomor_wa) {
+                $namaAset = '';
+                $detailJumlah = '1 Unit';
+
+                if ($peminjaman->barang_id) {
+                    $namaAset = $peminjaman->barang->nama_barang ?? 'Barang Inventaris';
+                    $detailJumlah = $peminjaman->jumlah_item . ' Unit';
+                } elseif ($peminjaman->kendaraan_id) {
+                    $namaAset = ($peminjaman->kendaraan->nama_kendaraan ?? 'Kendaraan') . ' [' . ($peminjaman->kendaraan->plat_nomor ?? '-') . ']';
+                } elseif ($peminjaman->ruangan_id) {
+                    $namaAset = $peminjaman->ruangan->nama_ruangan ?? 'Ruangan/Aula';
+                }
+
+                $namaPeminjam = $peminjaman->user->name ?? 'Civitas PNUP';
+
+                $pesan = "✅ *PEMBERITAHUAN: PENGEMBALIAN ASET BERHASIL*\n\n"
+                       . "Halo *" . $namaPeminjam . "*,\n"
+                       . "Proses pengembalian aset peminjaman Anda telah *SELESAI* dan dikonfirmasi oleh Admin Divisi Rumah Tangga PNUP.\n\n"
+                       . "📌 *Detail Aset :* " . $namaAset . "\n"
+                       . "🔢 *Jumlah :* " . $detailJumlah . "\n"
+                       . "📅 *Tanggal Dikembalikan :* " . date('d M Y') . "\n\n"
+                       . "Terima kasih telah menjaga dan mengembalikan aset tepat waktu!\n\n"
+                       . "_- Sistem Pinjam-INV PNUP -_";
+
+                if (class_exists('App\Services\WhatsappService')) {
+                    WhatsappService::sendMessage($peminjaman->nomor_wa, $pesan);
+                }
+            }
+
+            return redirect()->back()->with('success', 'Aset telah dikembalikan, status dipulihkan menjadi Tersedia, dan notifikasi WA berhasil dikirim.');
 
         } catch (\Exception $e) {
             return redirect()->back()->with('error', $e->getMessage());
