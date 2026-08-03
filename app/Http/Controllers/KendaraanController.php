@@ -18,8 +18,8 @@ class KendaraanController extends Controller
     }
 
     /**
-     * 1. Menampilkan daftar kendaraan dengan urutan kondisi kustom (Eager Loading).
-     * Diperbarui dengan fitur pencarian teks (search) dan filter dropdown (jenis_kendaraan).
+     * 1. Menampilkan daftar kendaraan dengan urutan kondisi kustom (Eager Loading) & Pagination.
+     * Diperbarui dengan fitur pencarian teks (search), filter dropdown (jenis_kendaraan), dan pagination.
      * Terbuka untuk semua user (Admin dan Staff/Mahasiswa).
      */
     public function index(Request $request)
@@ -34,15 +34,17 @@ class KendaraanController extends Controller
 
         // 3. Logika Opsi 2: Pencarian Kata Kunci Teks (Merek/Nama Kendaraan atau Plat Nomor)
         if ($request->has('search') && $request->search != '') {
-            $query->where(function($q) use ($request) {
-                $q->where('nama_kendaraan', 'like', '%' . $request->search . '%')
-                  ->orWhere('plat_nomor', 'like', '%' . $request->search . '%');
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('nama_kendaraan', 'like', '%' . $search . '%')
+                  ->orWhere('plat_nomor', 'like', '%' . $search . '%');
             });
         }
 
-        // 4. Pengurutan Kustom berdasarkan kondisi fisik aset kendaraan
+        // 4. Pengurutan Kustom berdasarkan kondisi fisik aset kendaraan & Tambahkan Pagination (10 item)
         $kendaraans = $query->orderByRaw("FIELD(kondisi, 'Baik', 'Rusak Ringan', 'Servis', 'Rusak Berat')")
-                            ->get(); 
+                            ->paginate(10)
+                            ->withQueryString(); 
             
         return view('kendaraan.index', compact('kendaraans'));
     }

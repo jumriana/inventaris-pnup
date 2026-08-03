@@ -160,6 +160,25 @@
     </div>
     @endforelse
 </div>
+
+{{-- DOKUMEN PAGINATION RUANGAN --}}
+@if($ruangans->hasPages())
+    <div class="row mt-3 mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-0" style="border-radius: 12px;">
+                <div class="card-body py-3 d-flex flex-column flex-md-row justify-content-between align-items-center">
+                    <div class="text-muted small mb-2 mb-md-0">
+                        Menampilkan <strong>{{ $ruangans->firstItem() }}</strong> sampai <strong>{{ $ruangans->lastItem() }}</strong> dari <strong>{{ $ruangans->total() }}</strong> ruangan
+                    </div>
+                    <div>
+                        {{ $ruangans->links('pagination::bootstrap-4') }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+@endif
+
 @stop
 
 @section('css')

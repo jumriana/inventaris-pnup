@@ -18,8 +18,8 @@ class RuanganController extends Controller
     }
 
     /**
-     * 1. Menampilkan daftar semua ruangan dengan urutan status kustom (Eager Loading).
-     * Diperbarui dengan fitur pencarian (search) dan filter cepat (status).
+     * 1. Menampilkan daftar semua ruangan dengan urutan status kustom (Eager Loading) & Pagination.
+     * Diperbarui dengan fitur pencarian (search), filter cepat (status), dan pagination.
      * Dapat diakses oleh Admin maupun User umum.
      */
     public function index(Request $request)
@@ -27,11 +27,13 @@ class RuanganController extends Controller
         // 1. Inisialisasi query dasar beserta Eager Loading relasi
         $query = Ruangan::with(['peminjamans', 'peminjamanAktif']);
 
-        // 2. Logika Pencarian Kata Kunci (Berdasarkan Nama Ruangan atau Lokasi)
+        // 2. Logika Pencarian Kata Kunci (Berdasarkan Kode Ruangan, Nama Ruangan, atau Lokasi)
         if ($request->has('search') && $request->search != '') {
-            $query->where(function($q) use ($request) {
-                $q->where('nama_ruangan', 'like', '%' . $request->search . '%')
-                  ->orWhere('lokasi', 'like', '%' . $request->search . '%');
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('nama_ruangan', 'like', '%' . $search . '%')
+                  ->orWhere('kode_ruangan', 'like', '%' . $search . '%')
+                  ->orWhere('lokasi', 'like', '%' . $search . '%');
             });
         }
 
@@ -40,9 +42,10 @@ class RuanganController extends Controller
             $query->where('status', $request->status);
         }
 
-        // 4. Pengurutan Kustom: Tersedia -> Dipakai -> Perbaikan
+        // 4. Pengurutan Kustom: Tersedia -> Dipakai -> Perbaikan & Tambahkan Pagination (10 item)
         $ruangans = $query->orderByRaw("FIELD(status, 'Tersedia', 'Dipakai', 'Perbaikan')")
-                          ->get();
+                          ->paginate(10)
+                          ->withQueryString();
 
         return view('ruangan.index', compact('ruangans'));
     }

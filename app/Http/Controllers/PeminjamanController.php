@@ -20,21 +20,60 @@ class PeminjamanController extends Controller
     }
 
     /**
-     * Menampilkan daftar transaksi berdasarkan role.
+     * Menampilkan daftar transaksi berdasarkan role & keyword pencarian (dengan Pagination).
      */
-    public function index()
+    public function index(Request $request)
     {
+        $search = trim($request->input('search'));
+
+        // Eloquent Eager Loading Relasi
         $query = Peminjaman::with(['user', 'barang', 'kendaraan', 'ruangan'])->latest();
 
-        if (Auth::user()->role == 'admin') {
-            $peminjamans = $query->get();
-        } else {
-            $peminjamans = $query->where('user_id', Auth::user()->identity_number)
-                                 ->orWhere('user_id', Auth::id())
-                                 ->get();
+        // 1. Filter Role User (Jika bukan admin, hanya melihat transaksi sendiri)
+        if (Auth::user()->role != 'admin') {
+            $query->where(function($q) {
+                $q->where('user_id', Auth::user()->identity_number)
+                  ->orWhere('user_id', Auth::id());
+            });
         }
 
-        return view('peminjaman.index', compact('peminjamans'));
+        // 2. Filter Pencarian Presisi
+        if ($search !== '' && $search !== null) {
+            $query->where(function ($q) use ($search) {
+                // Cari berdasarkan Nomor WA, Keperluan, atau Status
+                $q->where('nomor_wa', 'like', "%{$search}%")
+                  ->orWhere('keperluan', 'like', "%{$search}%")
+                  ->orWhere('status', 'like', "%{$search}%");
+
+                // Cari berdasarkan Nama User Peminjam (Jika admin)
+                if (Auth::user()->role == 'admin') {
+                    $q->orWhereHas('user', function ($u) use ($search) {
+                        $u->where('name', 'like', "%{$search}%");
+                    });
+                }
+
+                // Cari berdasarkan Nama Barang
+                $q->orWhereHas('barang', function ($b) use ($search) {
+                    $b->where('nama_barang', 'like', "%{$search}%");
+                });
+
+                // Cari berdasarkan Nama Kendaraan / Plat Nomor
+                $q->orWhereHas('kendaraan', function ($k) use ($search) {
+                    $k->where('nama_kendaraan', 'like', "%{$search}%")
+                      ->orWhere('plat_nomor', 'like', "%{$search}%");
+                });
+
+                // Cari berdasarkan Nama Ruangan
+                $q->orWhereHas('ruangan', function ($r) use ($search) {
+                    $r->where('nama_ruangan', 'like', "%{$search}%");
+                });
+            });
+        }
+
+        // Menggunakan Paginate (10 data per halaman) + withQueryString() agar kata kunci pencarian tidak hilang
+        $peminjamans = $query->paginate(10)->withQueryString();
+
+        return view('peminjaman.index', compact('peminjamans', 'search'));
     }
 
     /**

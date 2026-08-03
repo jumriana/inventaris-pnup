@@ -86,15 +86,15 @@
                     <i class="fas fa-box fa-4x text-secondary opacity-50"></i>
                 </div>
 
-                {{-- Nama Barang menampilkan MERK BMN --}}
+                {{-- Nama Barang --}}
                 <h4 class="font-weight-bold text-dark text-center mb-1 text-capitalize">{{ $b->nama_barang }}</h4>
                 
-                {{-- Keterangan Barang menampilkan teks inputan Keterangan --}}
+                {{-- Keterangan Barang --}}
                 <p class="text-muted small text-center mb-3">
                     <i class="fas fa-info-circle text-info mr-1"></i> {{ Str::limit($b->ruangan_id, 40) }}
                 </p>
 
-                {{-- Tampilan statistik satu kolom penuh tanpa kolom NUP --}}
+                {{-- Tampilan statistik stok --}}
                 <div class="text-center mb-3 py-2 bg-light rounded mx-0">
                     <small class="d-block text-muted">Jumlah</small>
                     <span class="font-weight-bold {{ $b->jumlah_stok > 0 ? 'text-success' : 'text-danger' }}" style="font-size: 1.1rem;">
@@ -118,7 +118,7 @@
                             </a>
                         </div>
 
-                        {{-- FITUR TAMBAHAN: Tombol Pinjam Barang untuk Sisi Admin --}}
+                        {{-- Tombol Pinjam Barang untuk Sisi Admin --}}
                         @if($b->kondisi == 'Rusak')
                             <button class="btn btn-secondary btn-block rounded-pill disabled" disabled>
                                 <i class="fas fa-exclamation-triangle mr-1"></i> Rusak (Tidak Bisa Pinjam)
@@ -162,6 +162,25 @@
     </div>
     @endforelse
 </div>
+
+{{-- DOKUMEN PAGINATION INVENTARIS BARANG --}}
+@if($barangs->hasPages())
+    <div class="row mt-3 mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-0" style="border-radius: 12px;">
+                <div class="card-body py-3 d-flex flex-column flex-md-row justify-content-between align-items-center">
+                    <div class="text-muted small mb-2 mb-md-0">
+                        Menampilkan <strong>{{ $barangs->firstItem() }}</strong> sampai <strong>{{ $barangs->lastItem() }}</strong> dari <strong>{{ $barangs->total() }}</strong> barang
+                    </div>
+                    <div>
+                        {{ $barangs->links('pagination::bootstrap-4') }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+@endif
+
 @stop
 
 {{-- Menghubungkan File CSS Modular Barang --}}

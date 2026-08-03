@@ -3,7 +3,7 @@
 @section('title', 'Data Peminjaman')
 
 @section('content_header')
-    <div class="d-flex justify-content-between align-items-center">
+    <div class="d-flex justify-content-between align-items-center mb-2">
         <h1 class="font-weight-bold text-dark"><i class="fas fa-handshake mr-2 text-success"></i> Daftar Transaksi Peminjaman</h1>
         <a href="{{ route('peminjaman.create') }}" class="btn btn-success shadow-sm">
             <i class="fas fa-plus-circle mr-1"></i> Buat Pinjaman Baru
@@ -33,6 +33,29 @@
 @endif
 
 <div class="card shadow-sm" style="border-radius: 15px;">
+    {{-- BARIS FORM PENCARIAN --}}
+    <div class="card-header bg-white py-3">
+        <div class="row">
+            <div class="col-md-5 col-lg-4">
+                <form action="{{ route('peminjaman.index') }}" method="GET">
+                    <div class="input-group">
+                        <input type="text" name="search" class="form-control" placeholder="Cari peminjam, aset, status..." value="{{ request('search') }}">
+                        <div class="input-group-append">
+                            <button class="btn btn-primary shadow-sm" type="submit" title="Cari">
+                                <i class="fas fa-search mr-1"></i> Cari
+                            </button>
+                            @if(request('search'))
+                                <a href="{{ route('peminjaman.index') }}" class="btn btn-secondary shadow-sm" title="Reset">
+                                    <i class="fas fa-undo"></i> Reset
+                                </a>
+                            @endif
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table table-hover mb-0">
@@ -51,7 +74,8 @@
                 <tbody>
                     @forelse($peminjamans as $key => $p)
                     <tr>
-                        <td class="text-center align-middle">{{ $key + 1 }}</td>
+                        {{-- PENOMORAN DINAMIS SESUAI HALAMAN PAGINATION --}}
+                        <td class="text-center align-middle">{{ $peminjamans->firstItem() + $key }}</td>
                         <td class="align-middle">
                             <span class="font-weight-bold d-block">{{ $p->user->name ?? 'Civitas PNUP (User Terhapus)' }}</span>
                             @if($p->nomor_wa)
@@ -83,7 +107,6 @@
                                 <small class="text-muted">Aula/Ruang Rapat</small>
                             @endif
 
-                            {{-- PERBAIKAN LINK SURAT IZIN --}}
                             @if($p->surat_izin)
                                 <div class="mt-2">
                                     <a href="{{ url('storage/' . $p->surat_izin) }}" target="_blank" class="btn btn-xs btn-outline-danger rounded-pill shadow-sm px-2">
@@ -127,7 +150,7 @@
                                         </button>
                                     </form>
 
-                                    <!-- Tombol Tolak Menggunakan Modal Pop-up dengan Teks Tolak -->
+                                    <!-- Tombol Tolak -->
                                     <button type="button" class="btn btn-sm btn-danger shadow-sm" data-toggle="modal" data-target="#modalTolak{{ $p->id }}" title="Tolak Peminjaman">
                                         <i class="fas fa-times"></i> Tolak
                                     </button>
@@ -151,7 +174,7 @@
                                                         <p class="text-dark">Masukkan alasan mengapa pengajuan oleh <strong>{{ $p->user->name ?? 'Pengguna' }}</strong> ditolak:</p>
                                                         <div class="form-group">
                                                             <label class="font-weight-bold text-dark">Alasan Penolakan <span class="text-danger">*</span></label>
-                                                            <textarea name="alasan_penolakan" class="form-control" rows="3" placeholder="Contoh: Jadwal bentrok / Berkas dokumen tidak lengkap / Aset sedang dalam perawatan" required></textarea>
+                                                            <textarea name="alasan_penolakan" class="form-control" rows="3" placeholder="Contoh: Jadwal bentrok / Berkas dokumen tidak lengkap" required></textarea>
                                                         </div>
                                                     </div>
                                                     <div class="modal-footer">
@@ -193,8 +216,14 @@
                     <tr>
                         <td colspan="{{ auth()->user()->role == 'admin' ? 6 : 5 }}" class="text-center py-5">
                             <i class="fas fa-folder-open fa-3x text-light mb-3"></i>
-                            <p class="text-secondary font-weight-bold">Belum ada transaksi peminjaman.</p>
-                            <a href="{{ route('peminjaman.create') }}" class="btn btn-sm btn-outline-success">Mulai Pinjam Sekarang</a>
+                            <p class="text-secondary font-weight-bold">
+                                {{ request('search') ? 'Data peminjaman tidak ditemukan dengan kata kunci "' . request('search') . '"' : 'Belum ada transaksi peminjaman.' }}
+                            </p>
+                            @if(request('search'))
+                                <a href="{{ route('peminjaman.index') }}" class="btn btn-sm btn-outline-primary">Lihat Semua Data</a>
+                            @else
+                                <a href="{{ route('peminjaman.create') }}" class="btn btn-sm btn-outline-success">Mulai Pinjam Sekarang</a>
+                            @endif
                         </td>
                     </tr>
                     @endforelse
@@ -202,6 +231,18 @@
             </table>
         </div>
     </div>
+
+    {{-- DOKUMEN FOOTER: NAVIGASI PAGINATION --}}
+    @if($peminjamans->hasPages())
+        <div class="card-footer bg-white d-flex flex-column flex-md-row justify-content-between align-items-center py-3">
+            <div class="text-muted small mb-2 mb-md-0">
+                Menampilkan <strong>{{ $peminjamans->firstItem() }}</strong> sampai <strong>{{ $peminjamans->lastItem() }}</strong> dari <strong>{{ $peminjamans->total() }}</strong> transaksi
+            </div>
+            <div>
+                {{ $peminjamans->links('pagination::bootstrap-4') }}
+            </div>
+        </div>
+    @endif
 </div>
 @stop
 

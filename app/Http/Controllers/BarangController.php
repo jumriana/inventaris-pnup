@@ -17,8 +17,8 @@ class BarangController extends Controller
     }
 
     /**
-     * 1. Menampilkan daftar inventaris barang diurutkan berdasarkan Abjad A-Z.
-     * Ditambahkan fitur pencarian cepat dan penyaringan kategori aset.
+     * 1. Menampilkan daftar inventaris barang diurutkan berdasarkan Abjad A-Z & Pagination.
+     * Ditambahkan fitur pencarian cepat, penyaringan kategori aset, dan pagination.
      * Terbuka untuk seluruh pengguna yang telah terautentikasi.
      */
     public function index(Request $request)
@@ -40,8 +40,10 @@ class BarangController extends Controller
             });
         }
 
-        // Mengurutkan data inventaris barang berdasarkan nama_barang (A ke Z)
-        $barangs = $query->orderBy('nama_barang', 'asc')->get();
+        // Mengurutkan data berdasarkan nama_barang (A ke Z) & Tambahkan Paginate (10 item per halaman)
+        $barangs = $query->orderBy('nama_barang', 'asc')
+                         ->paginate(10)
+                         ->withQueryString();
         
         return view('barang.index', compact('barangs'));
     }
