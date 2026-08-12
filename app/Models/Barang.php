@@ -19,9 +19,11 @@ class Barang extends Model
         'nama_barang', 
         'kondisi', 
         'jumlah_stok', 
+        'max_hari',       // PENAMBAHAN REVISI: Batas Maksimal Hari Peminjaman
+        'kategori',       
         'tanggal_regis',  
         'ruangan_id', 
-        'created_at', // Tambahkan ini agar bisa diisi manual jika butuh
-        'updated_at'  // Tambahkan ini agar bisa diisi manual jika butuh
+        'created_at',     
+        'updated_at'      
     ];
 }

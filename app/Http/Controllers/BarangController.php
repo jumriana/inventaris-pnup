@@ -18,20 +18,15 @@ class BarangController extends Controller
 
     /**
      * 1. Menampilkan daftar inventaris barang diurutkan berdasarkan Abjad A-Z & Pagination.
-     * Ditambahkan fitur pencarian cepat, penyaringan kategori aset, dan pagination.
-     * Terbuka untuk seluruh pengguna yang telah terautentikasi.
      */
     public function index(Request $request)
     {
         $query = Barang::query();
 
-        // FITUR TAMBAHAN: Logika Penyaringan Berdasarkan Pilihan Kategori Dropdown
         if ($request->filled('kategori')) {
-            // Catatan: Pastikan kolom 'kategori' tersedia pada tabel barang di database Anda
             $query->where('kategori', $request->kategori);
         }
 
-        // FITUR TAMBAHAN: Logika Pencarian Cepat Berdasarkan Nama atau Kode Inventaris
         if ($request->filled('search')) {
             $searchTerm = $request->search;
             $query->where(function($q) use ($searchTerm) {
@@ -40,7 +35,6 @@ class BarangController extends Controller
             });
         }
 
-        // Mengurutkan data berdasarkan nama_barang (A ke Z) & Tambahkan Paginate (10 item per halaman)
         $barangs = $query->orderBy('nama_barang', 'asc')
                          ->paginate(10)
                          ->withQueryString();
@@ -50,7 +44,6 @@ class BarangController extends Controller
 
     /**
      * 2. Menampilkan form tambah barang.
-     * PROTEKSI: Khusus Admin.
      */
     public function create()
     {
@@ -62,8 +55,7 @@ class BarangController extends Controller
     }
 
     /**
-     * 3. Menyimpan data barang baru ke database (Mendukung 5 Field Form BMN).
-     * PROTEKSI: Khusus Admin.
+     * 3. Menyimpan data barang baru ke database (dengan Max Hari Peminjaman).
      */
     public function store(Request $request)
     {
@@ -71,32 +63,30 @@ class BarangController extends Controller
             abort(403, 'Aksi tidak diizinkan.');
         }
 
-        // Validasi input dari form BMN
         $request->validate([
             'kode_barang' => 'required|string|max:100|unique:barang,kode_inventaris',
             'nup'         => 'required|numeric|min:1',
             'nama_barang' => 'required|string|max:255',
             'merk'        => 'required|string|max:255',
             'kondisi'     => 'required|in:Baik,Rusak Ringan,Rusak',
+            'max_hari'    => 'nullable|integer|min:1|max:7', // Batas maksimal 1 - 7 hari
             'keterangan'  => 'nullable|string',
         ]);
 
-        // Mapping data dari form ke kolom database asli Anda
         $barang = new Barang();
-        $barang->kode_inventaris = $request->kode_barang; // Kode Barang ke kode_inventaris
-        $barang->nama_barang     = $request->nama_barang; // Nama Barang ke nama_barang
-        $barang->kondisi         = $request->kondisi;     // Kondisi ke kondisi
-        $barang->jumlah_stok     = $request->nup;         // NUP ke jumlah_stok (Sebagai Jumlah)
-        
-        // Menggabungkan Merk dan Keterangan Tambahan ke dalam kolom ruangan_id agar semua info aman tersimpan
+        $barang->kode_inventaris = $request->kode_barang;
+        $barang->nama_barang     = $request->nama_barang;
+        $barang->kondisi         = $request->kondisi;
+        $barang->jumlah_stok     = $request->nup;
+        $barang->max_hari        = $request->max_hari ?? 7; // Default 7 hari jika dikosongkan
+
         $barang->ruangan_id      = 'Merk: ' . $request->merk . ' | ' . ($request->keterangan ?? 'Tanpa Keterangan');
         
-        // Menyimpan kategori barang jika form input tambah barang juga menyediakan field kategori
         if ($request->has('kategori')) {
             $barang->kategori    = $request->kategori;
         }
 
-        $barang->status          = 'Tersedia';            // Set status default bawaan sistem Anda
+        $barang->status          = 'Tersedia';
         $barang->tanggal_regis   = now()->format('Y-m-d');
         
         $barang->save();
@@ -106,7 +96,6 @@ class BarangController extends Controller
 
     /**
      * 4. Menampilkan form edit barang.
-     * PROTEKSI: Khusus Admin.
      */
     public function edit($id)
     {
@@ -119,8 +108,7 @@ class BarangController extends Controller
     }
 
     /**
-     * 5. Memperbarui data barang yang sudah ada.
-     * PROTEKSI: Khusus Admin.
+     * 5. Memperbarui data barang.
      */
     public function update(Request $request, $id)
     {
@@ -130,21 +118,22 @@ class BarangController extends Controller
 
         $barang = Barang::findOrFail($id);
 
-        // Validasi input edit untuk form BMN
         $request->validate([
             'kode_barang' => 'required|string|max:100|unique:barang,kode_inventaris,' . $id,
             'nup'         => 'required|numeric|min:1',
             'nama_barang' => 'required|string|max:255',
             'merk'        => 'required|string|max:255',
             'kondisi'     => 'required|in:Baik,Rusak Ringan,Rusak',
+            'max_hari'    => 'nullable|integer|min:1|max:7', // Batas maksimal 1 - 7 hari
             'keterangan'  => 'nullable|string',
         ]);
 
-        // Mapping update langsung ke kolom database asli Anda
         $barang->kode_inventaris = $request->kode_barang;
         $barang->nama_barang     = $request->nama_barang;
         $barang->kondisi         = $request->kondisi;
         $barang->jumlah_stok     = $request->nup;
+        $barang->max_hari        = $request->max_hari ?? 7; // Default 7 hari jika dikosongkan
+
         $barang->ruangan_id      = 'Merk: ' . $request->merk . ' | ' . ($request->keterangan ?? 'Tanpa Keterangan');
         
         if ($request->has('kategori')) {
@@ -158,7 +147,6 @@ class BarangController extends Controller
 
     /**
      * 6. Menghapus data barang.
-     * PROTEKSI: Khusus Admin.
      */
     public function destroy($id)
     {

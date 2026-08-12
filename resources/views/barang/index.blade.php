@@ -94,12 +94,22 @@
                     <i class="fas fa-info-circle text-info mr-1"></i> {{ Str::limit($b->ruangan_id, 40) }}
                 </p>
 
-                {{-- Tampilan statistik stok --}}
+                {{-- Tampilan statistik stok dan Max Hari Peminjaman --}}
                 <div class="text-center mb-3 py-2 bg-light rounded mx-0">
-                    <small class="d-block text-muted">Jumlah</small>
-                    <span class="font-weight-bold {{ $b->jumlah_stok > 0 ? 'text-success' : 'text-danger' }}" style="font-size: 1.1rem;">
-                        {{ $b->jumlah_stok }} Unit
-                    </span>
+                    <div class="row">
+                        <div class="col-6 border-right">
+                            <small class="d-block text-muted">Jumlah Stok</small>
+                            <span class="font-weight-bold {{ $b->jumlah_stok > 0 ? 'text-success' : 'text-danger' }}" style="font-size: 1.1rem;">
+                                {{ $b->jumlah_stok }} Unit
+                            </span>
+                        </div>
+                        <div class="col-6">
+                            <small class="d-block text-muted">Max Pinjam</small>
+                            <span class="font-weight-bold text-primary" style="font-size: 1.1rem;">
+                                {{ $b->max_hari ?? 7 }} Hari
+                            </span>
+                        </div>
+                    </div>
                 </div>
 
                 {{-- LOGIKA TOMBOL BERDASARKAN ROLE DAN KONDISI --}}
@@ -193,7 +203,6 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="{{ asset('js/barang.js') }}"></script>
 
-{{-- Trigger SweetAlert jika ada session success --}}
 @if(session('success'))
 <script>
     Swal.fire({

@@ -39,7 +39,7 @@
 
                 {{-- Rencana Kembali --}}
                 <div class="col-md-4 form-group">
-                    <label>Rencana Kembali (Maks. 1 Minggu)</label>
+                    <label id="label-tgl-kembali">Rencana Kembali (Maks. 1 Minggu)</label>
                     <input type="date" 
                            name="tgl_kembali" 
                            id="tgl_kembali"
@@ -149,6 +149,7 @@
                                     @foreach($barangs as $b)
                                         <option value="{{ $b->id }}" 
                                             data-stok="{{ $b->jumlah_stok }}"
+                                            data-max-hari="{{ $b->max_hari ?? 7 }}"
                                             {{ ($kategori_pilihan == 'barang' && $selected_item_id == $b->id) ? 'selected' : '' }}>
                                             {{ $b->nama_barang }} (Stok: {{ $b->jumlah_stok }})
                                         </option>
@@ -180,123 +181,4 @@
 @section('js')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="{{ asset('js/peminjaman.js') }}"></script>
-<script>
-    $(document).ready(function() {
-        // ==========================================
-        // LOGIKA PEMBATASAN TANGGAL KEMBALI (MAX 1 MINGGU)
-        // ==========================================
-        function updateLimitTanggalKembali() {
-            var tglPinjamVal = $('#tgl_pinjam').val();
-            
-            if (tglPinjamVal) {
-                var tglPinjam = new Date(tglPinjamVal);
-                
-                // 1. Tanggal minimal kembali = Tanggal Pinjam
-                var minKembaliStr = tglPinjamVal;
-
-                // 2. Tanggal maksimal kembali = Tanggal Pinjam + 7 Hari
-                var maxKembali = new Date(tglPinjam);
-                maxKembali.setDate(maxKembali.getDate() + 7);
-                var maxKembaliStr = maxKembali.toISOString().split('T')[0];
-
-                // Pasang batas min dan max ke atribut HTML input tgl_kembali
-                $('#tgl_kembali').attr('min', minKembaliStr);
-                $('#tgl_kembali').attr('max', maxKembaliStr);
-
-                // Jika tanggal kembali saat ini di luar batas, reset atau posisikan ke batas max
-                var tglKembaliVal = $('#tgl_kembali').val();
-                if (tglKembaliVal && (tglKembaliVal < minKembaliStr || tglKembaliVal > maxKembaliStr)) {
-                    $('#tgl_kembali').val(maxKembaliStr);
-                }
-            }
-        }
-
-        // Jalankan saat pertama dimuat
-        updateLimitTanggalKembali();
-
-        // Jalankan saat tanggal pinjam diubah oleh pengguna
-        $('#tgl_pinjam').on('change', function() {
-            updateLimitTanggalKembali();
-        });
-
-        // Peringatan jika pengguna memaksa memilih tanggal di luar 7 hari secara manual
-        $('#tgl_kembali').on('change', function() {
-            var maxAllowed = $(this).attr('max');
-            var minAllowed = $(this).attr('min');
-            var selectedVal = $(this).val();
-
-            if (selectedVal && maxAllowed && selectedVal > maxAllowed) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Batas Peminjaman Terlampaui',
-                    text: 'Peminjaman maksimal hanya diperbolehkan selama 1 minggu (7 hari) dari tanggal pinjam.',
-                    confirmButtonColor: '#3085d6'
-                });
-                $(this).val(maxAllowed);
-            } else if (selectedVal && minAllowed && selectedVal < minAllowed) {
-                $(this).val(minAllowed);
-            }
-        });
-
-        // ==========================================
-        // LOGIKA BARANG DINAMIS & STOK
-        // ==========================================
-        // 1. Logika tombol Tambah Baris Dinamis
-        $('#addRow').click(function() {
-            var newRow = `<tr>
-                <td>
-                    <select name="barang_id[]" class="form-control select-barang">
-                        <option value="">-- Pilih Barang --</option>
-                        @foreach($barangs as $b)
-                            <option value="{{ $b->id }}" data-stok="{{ $b->jumlah_stok }}">{{ $b->nama_barang }} (Stok: {{ $b->jumlah_stok }})</option>
-                        @endforeach
-                    </select>
-                </td>
-                <td><input type="number" name="jumlah[]" class="form-control input-jumlah" value="1" min="1"></td>
-                <td><button type="button" class="btn btn-danger btn-sm remove-row"><i class="fas fa-trash"></i></button></td>
-            </tr>`;
-            $('#tableBarang tbody').append(newRow);
-        });
-
-        // Hapus baris dinamis
-        $(document).on('click', '.remove-row', function() {
-            $(this).closest('tr').remove();
-        });
-
-        // 2. Mengubah nilai max atribut secara dinamis saat dropdown barang dipilih
-        $(document).on('change', '.select-barang', function() {
-            var stok = $(this).find(':selected').data('stok');
-            var inputJumlah = $(this).closest('tr').find('.input-jumlah');
-            
-            if (stok !== undefined && stok !== '') {
-                inputJumlah.attr('max', stok);
-                
-                if (parseInt(inputJumlah.val()) > parseInt(stok)) {
-                    inputJumlah.val(stok);
-                }
-            } else {
-                inputJumlah.removeAttr('max');
-            }
-        });
-
-        // 3. Validasi saat user mengetik atau mengubah isi input jumlah secara manual
-        $(document).on('input change', '.input-jumlah', function() {
-            var maxStok = $(this).attr('max');
-            var valueInput = $(this).val();
-
-            if (maxStok && parseInt(valueInput) > parseInt(maxStok)) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Stok Tidak Mencukupi',
-                    text: 'Anda tidak dapat meminjam melebihi sisa stok yang tersedia (' + maxStok + ' Unit).',
-                    confirmButtonColor: '#3085d6'
-                });
-                $(this).val(maxStok);
-            }
-        });
-
-        // Trigger perubahan awal
-        $('.select-barang').trigger('change');
-    });
-</script>
 @stop

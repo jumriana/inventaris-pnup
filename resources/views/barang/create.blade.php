@@ -78,7 +78,7 @@
                             </div>
                         </div>
 
-                        {{-- UPDATE BARU: KATEGORI BARANG --}}
+                        {{-- KATEGORI BARANG --}}
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="kategori">Kategori Barang</label>
@@ -97,10 +97,26 @@
                         </div>
                     </div>
 
-                    {{-- 6. KETERANGAN TAMBAHAN --}}
-                    <div class="form-group">
-                        <label for="keterangan">Keterangan Tambahan (Opsional)</label>
-                        <textarea name="keterangan" class="form-control" id="keterangan" rows="3" placeholder="Contoh: Lokasi di Lab Komputer Gedung B Lantai 2...">{{ old('keterangan') }}</textarea>
+                    <div class="row">
+                        {{-- REVISI: BATAS MAKSIMAL HARI PEMINJAMAN --}}
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="max_hari">Batas Maksimal Peminjaman (Hari)</label>
+                                <input type="number" name="max_hari" class="form-control @error('max_hari') is-invalid @enderror" id="max_hari" placeholder="Default: 7 Hari (1 Minggu)" value="{{ old('max_hari', 7) }}" min="1" max="7">
+                                <small class="text-muted">Untuk barang yang sering dipinjam, atur batas hari lebih pendek (misal 2 atau 3 hari).</small>
+                                @error('max_hari')
+                                    <span class="invalid-feedback" role="alert"><strong>{{ $message }}</strong></span>
+                                @enderror
+                            </div>
+                        </div>
+
+                        {{-- 6. KETERANGAN TAMBAHAN --}}
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="keterangan">Keterangan Tambahan (Opsional)</label>
+                                <textarea name="keterangan" class="form-control" id="keterangan" rows="3" placeholder="Contoh: Lokasi di Lab Komputer Gedung B Lantai 2...">{{ old('keterangan') }}</textarea>
+                            </div>
+                        </div>
                     </div>
 
                 </div>

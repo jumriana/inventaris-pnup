@@ -55,16 +55,14 @@
                             @enderror
                         </div>
 
-                        {{-- 4. MERK (Memisahkan Teks Merk dari ruangan_id) --}}
+                        {{-- 4. MERK --}}
                         <div class="col-md-6 form-group">
                             @php
                                 $merkValue = '';
-                                // Jika formatnya "Merk: BOSCH | Keterangan..."
                                 if (strpos($barang->ruangan_id, 'Merk: ') !== false) {
                                     $part1 = explode('Merk: ', $barang->ruangan_id)[1];
                                     $merkValue = explode(' | ', $part1)[0];
                                 } else {
-                                    // Antisipasi jika data lama belum menggunakan format gabungan
                                     $merkValue = $barang->nama_barang; 
                                 }
                             @endphp
@@ -92,7 +90,7 @@
                             @enderror
                         </div>
 
-                        {{-- UPDATE BARU: EDIT KATEGORI BARANG --}}
+                        {{-- EDIT KATEGORI BARANG --}}
                         <div class="col-md-6 form-group">
                             <label for="kategori">Kategori Barang</label>
                             <select name="kategori" id="kategori" class="form-control @error('kategori') is-invalid @enderror" required>
@@ -109,27 +107,40 @@
                         </div>
                     </div>
 
-                    {{-- 6. KETERANGAN TAMBAHAN (Memisahkan Teks Keterangan dari ruangan_id) --}}
-                    <div class="form-group">
-                        <label for="keterangan">Keterangan Tambahan (Opsional)</label>
-                        @php
-                            $ketValue = '';
-                            // Jika format menggunakan pemisah " | "
-                            if (strpos($barang->ruangan_id, ' | ') !== false) {
-                                $ketValue = explode(' | ', $barang->ruangan_id)[1];
-                                if($ketValue == 'Tanpa Keterangan') {
-                                    $ketValue = '';
+                    <div class="row">
+                        {{-- REVISI: BATAS MAKSIMAL HARI PEMINJAMAN --}}
+                        <div class="col-md-6 form-group">
+                            <label for="max_hari">Batas Maksimal Peminjaman (Hari)</label>
+                            <input type="number" name="max_hari" id="max_hari" 
+                                   class="form-control @error('max_hari') is-invalid @enderror" 
+                                   value="{{ old('max_hari', $barang->max_hari ?? 7) }}" 
+                                   placeholder="Default: 7 Hari (1 Minggu)" min="1" max="7">
+                            <small class="text-muted">Untuk barang yang sering dipinjam, atur batas hari lebih pendek (misal 2 atau 3 hari).</small>
+                            @error('max_hari')
+                                <span class="invalid-feedback" role="alert"><strong>{{ $message }}</strong></span>
+                            @enderror
+                        </div>
+
+                        {{-- 6. KETERANGAN TAMBAHAN --}}
+                        <div class="col-md-6 form-group">
+                            @php
+                                $ketValue = '';
+                                if (strpos($barang->ruangan_id, ' | ') !== false) {
+                                    $ketValue = explode(' | ', $barang->ruangan_id)[1];
+                                    if($ketValue == 'Tanpa Keterangan') {
+                                        $ketValue = '';
+                                    }
+                                } else {
+                                    $ketValue = $barang->ruangan_id;
                                 }
-                            } else {
-                                // Jika data lama tidak mengandung " | ", ambil langsung isinya
-                                $ketValue = $barang->ruangan_id;
-                            }
-                        @endphp
-                        <textarea name="keterangan" id="keterangan" class="form-control @error('keterangan') is-invalid @enderror" 
-                                  rows="3" placeholder="Contoh: Lokasi penempatan, riwayat serah terima...">{{ old('keterangan', $ketValue) }}</textarea>
-                        @error('keterangan')
-                            <span class="invalid-feedback">{{ $message }}</span>
-                        @enderror
+                            @endphp
+                            <label for="keterangan">Keterangan Tambahan (Opsional)</label>
+                            <textarea name="keterangan" id="keterangan" class="form-control @error('keterangan') is-invalid @enderror" 
+                                      rows="3" placeholder="Contoh: Lokasi penempatan, riwayat serah terima...">{{ old('keterangan', $ketValue) }}</textarea>
+                            @error('keterangan')
+                                <span class="invalid-feedback">{{ $message }}</span>
+                            @enderror
+                        </div>
                     </div>
                 </div>
 

@@ -92,23 +92,36 @@ class PeminjamanController extends Controller
     }
     
     /**
-     * Memproses penyimpanan data permohonan peminjaman baru dengan validasi Race Condition jadwal.
+     * Memproses penyimpanan data permohonan peminjaman baru dengan validasi Dinamis Batas Hari Barang.
      */
     public function store(Request $request)
     {
-        // Hitung batas tanggal maksimal kembali (tgl_pinjam + 7 hari)
+        // 1. HITUNG BATAS MAKSIMAL HARI PEMINJAMAN DINAMIS
+        $batasHari = 7; // Default 7 Hari (1 Minggu)
+
+        if ($request->kategori === 'barang' && $request->has('barang_id')) {
+            $firstBarangId = is_array($request->barang_id) ? $request->barang_id[0] : $request->barang_id;
+            if ($firstBarangId) {
+                $barangData = Barang::find($firstBarangId);
+                if ($barangData && $barangData->max_hari) {
+                    $batasHari = $barangData->max_hari; // Gunakan batas hari spesifik barang (misal 2 atau 3 hari)
+                }
+            }
+        }
+
+        // Hitung batas tanggal maksimal kembali berdasarkan aturan max_hari barang
         $maxKembali = $request->tgl_pinjam 
-            ? Carbon::parse($request->tgl_pinjam)->addDays(7)->format('Y-m-d') 
+            ? Carbon::parse($request->tgl_pinjam)->addDays($batasHari)->format('Y-m-d') 
             : null;
 
-        // 1. VALIDASI INPUT FORM UTAMA
+        // 2. VALIDASI INPUT FORM UTAMA
         $request->validate([
             'tgl_pinjam'   => 'required|date|after_or_equal:today',
             'tgl_kembali'  => [
                 'required',
                 'date',
                 'after_or_equal:tgl_pinjam',
-                'before_or_equal:' . $maxKembali // Batas maksimal 7 hari dari tanggal pinjam
+                'before_or_equal:' . $maxKembali
             ],
             'nomor_wa'     => 'required|string',
             'keperluan'    => 'required|string',
@@ -119,7 +132,7 @@ class PeminjamanController extends Controller
             'tgl_pinjam.after_or_equal'   => 'Tanggal pinjam tidak boleh tanggal yang sudah lewat.',
             'tgl_kembali.required'        => 'Tanggal kembali wajib diisi.',
             'tgl_kembali.after_or_equal'  => 'Tanggal kembali tidak boleh sebelum tanggal pinjam.',
-            'tgl_kembali.before_or_equal' => 'Durasi peminjaman maksimal adalah 7 hari (1 minggu).',
+            'tgl_kembali.before_or_equal' => "Durasi peminjaman untuk barang ini maksimal adalah {$batasHari} hari.",
             'nomor_wa.required'           => 'Nomor WhatsApp wajib diisi.',
             'keperluan.required'          => 'Keperluan peminjaman wajib diisi.',
             'surat_izin.required_if'      => 'Dokumen surat izin resmi (PDF) wajib diunggah untuk peminjaman ruangan atau kendaraan.',
@@ -127,7 +140,7 @@ class PeminjamanController extends Controller
             'surat_izin.max'              => 'Ukuran berkas surat izin maksimal 2MB.',
         ]);
 
-        // 2. HANDLE UPLOAD FILE SURAT IZIN
+        // 3. HANDLE UPLOAD FILE SURAT IZIN
         $pathSuratIzin = null;
         if ($request->hasFile('surat_izin')) {
             $file = $request->file('surat_izin');
@@ -139,18 +152,16 @@ class PeminjamanController extends Controller
         $tgl_pnm = $request->tgl_pinjam;
         $tgl_kmb = $request->tgl_kembali;
         
-        // Menentukan status awal: Jika admin yang meminjam, langsung 'disetujui', jika user biasa maka 'pending'
         $statusAwal = (Auth::user()->role == 'admin') ? 'disetujui' : 'pending';
 
         try {
-            // 3. JALANKAN DATABASE TRANSACTION UNTUK MENGHINDARI RACE CONDITION
+            // 4. JALANKAN DATABASE TRANSACTION UNTUK MENGHINDARI RACE CONDITION
             DB::transaction(function () use ($request, $userIdTersimpan, $pathSuratIzin, $tgl_pnm, $tgl_kmb, $statusAwal) {
                 
                 if ($request->kategori === 'barang') {
                     if ($request->has('barang_id')) {
                         foreach ($request->barang_id as $key => $id) {
                             if ($id) {
-                                // Mengunci baris data barang yang dipilih
                                 $barang = Barang::where('id', $id)->lockForUpdate()->first();
                                 $qty_req = $request->jumlah[$key] ?? 1;
 
@@ -158,7 +169,6 @@ class PeminjamanController extends Controller
                                     throw new \Exception("Stok untuk barang " . ($barang->nama_barang ?? '') . " tidak mencukupi.");
                                 }
 
-                                // JIKA ADMIN: Langsung potong stok barang saat data dibuat
                                 if (Auth::user()->role == 'admin') {
                                     $barang->decrement('jumlah_stok', $qty_req);
                                 }
@@ -180,10 +190,8 @@ class PeminjamanController extends Controller
                 } 
                 
                 elseif ($request->kategori === 'kendaraan') {
-                    // Kunci eksklusif baris data kendaraan
                     $kendaraan = Kendaraan::where('id', $request->kendaraan_id)->lockForUpdate()->first();
 
-                    // Cek bentrokan jadwal pengajuan lain yang berstatus pending/disetujui
                     $isBentrok = Peminjaman::where('kendaraan_id', $request->kendaraan_id)
                         ->whereIn('status', ['pending', 'disetujui'])
                         ->where(function ($query) use ($tgl_pnm, $tgl_kmb) {
@@ -199,7 +207,6 @@ class PeminjamanController extends Controller
                         throw new \Exception("Maaf, kendaraan tersebut sudah dipesan oleh pengguna lain pada tanggal pilihan Anda.");
                     }
 
-                    // JIKA ADMIN: Langsung update status kendaraan jadi Dipinjam
                     if (Auth::user()->role == 'admin') {
                         Kendaraan::where('id', $request->kendaraan_id)->update(['status' => 'Dipinjam']);
                     }
@@ -218,10 +225,8 @@ class PeminjamanController extends Controller
                 } 
                 
                 elseif ($request->kategori === 'ruangan') {
-                    // Kunci eksklusif baris data ruangan
                     $ruangan = Ruangan::where('id', $request->ruangan_id)->lockForUpdate()->first();
 
-                    // Cek bentrokan jadwal ruangan
                     $isBentrok = Peminjaman::where('ruangan_id', $request->ruangan_id)
                         ->whereIn('status', ['pending', 'disetujui'])
                         ->where(function ($query) use ($tgl_pnm, $tgl_kmb) {
@@ -237,7 +242,6 @@ class PeminjamanController extends Controller
                         throw new \Exception("Maaf, ruangan/aula tersebut sudah dipesan pada rentang tanggal pilihan Anda.");
                     }
 
-                    // JIKA ADMIN: Langsung update status ruangan jadi Dipakai
                     if (Auth::user()->role == 'admin') {
                         Ruangan::where('id', $request->ruangan_id)->update(['status' => 'Dipakai']);
                     }
@@ -274,14 +278,12 @@ class PeminjamanController extends Controller
     {
         try {
             DB::transaction(function () use ($id, &$peminjaman) {
-                // Ambil dan kunci baris transaksi peminjaman ini
                 $peminjaman = Peminjaman::with(['user', 'barang', 'kendaraan', 'ruangan'])->lockForUpdate()->findOrFail($id);
 
                 if ($peminjaman->status === 'disetujui') {
                     throw new \Exception("Transaksi ini sudah disetujui sebelumnya.");
                 }
 
-                // 1. Logika Pengurangan Stok untuk Barang
                 if ($peminjaman->barang_id) {
                     $barang = Barang::where('id', $peminjaman->barang_id)->lockForUpdate()->first();
                     if (!$barang || $barang->jumlah_stok < $peminjaman->jumlah_item) {
@@ -290,12 +292,10 @@ class PeminjamanController extends Controller
                     $barang->decrement('jumlah_stok', $peminjaman->jumlah_item);
                 }
 
-                // 2. Logika Update Status untuk Kendaraan
                 if ($peminjaman->kendaraan_id) {
                     Kendaraan::where('id', $peminjaman->kendaraan_id)->update(['status' => 'Dipinjam']);
                 }
 
-                // 3. Logika Update Status untuk Ruangan
                 if ($peminjaman->ruangan_id) {
                     Ruangan::where('id', $peminjaman->ruangan_id)->update(['status' => 'Dipakai']);
                 }
@@ -303,7 +303,6 @@ class PeminjamanController extends Controller
                 $peminjaman->update(['status' => 'disetujui']);
             });
 
-            // --- PROSES KIRIM NOTIFIKASI WHATSAPP VIA FONNTE ---
             if ($peminjaman && $peminjaman->nomor_wa) {
                 $namaAset = '';
                 $detailJumlah = '1 Unit';
@@ -370,7 +369,6 @@ class PeminjamanController extends Controller
                 }
             });
 
-            // --- PROSES KIRIM NOTIFIKASI WHATSAPP KEMBALIKAN VIA FONNTE ---
             if ($peminjaman && $peminjaman->nomor_wa) {
                 $namaAset = '';
                 $detailJumlah = '1 Unit';
@@ -408,11 +406,10 @@ class PeminjamanController extends Controller
     }
 
     /**
-     * Menolak permintaan peminjaman dan mengabari user lewat notifikasi otomatis WhatsApp beserta alasannya.
+     * Menolak permintaan peminjaman.
      */
     public function tolak(Request $request, $id)
     {
-        // 1. Validasi input alasan penolakan dari modal form
         $request->validate([
             'alasan_penolakan' => 'required|string|max:500',
         ], [
@@ -422,7 +419,6 @@ class PeminjamanController extends Controller
         $peminjaman = Peminjaman::with(['user', 'barang', 'kendaraan', 'ruangan'])->findOrFail($id);
         $peminjaman->update(['status' => 'ditolak']);
 
-        // 2. Kirim Notifikasi WhatsApp beserta Alasan Penolakan
         if ($peminjaman->nomor_wa) {
             $namaAset = '';
             if ($peminjaman->barang_id) {
@@ -455,7 +451,7 @@ class PeminjamanController extends Controller
     }
 
     /**
-     * Menghapus data transaksi dari sistem (Histori Data).
+     * Menghapus data transaksi.
      */
     public function destroy($id)
     {
